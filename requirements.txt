@@ -1,0 +1,13 @@
+asgiref==3.8.1
+certifi==2025.1.31
+charset-normalizer==3.4.1
+defusedxml==0.7.1
+Django==5.1
+idna==3.10
+pip==25.0
+requests==2.32.3
+setuptools==75.8.0
+sqlparse==0.5.3
+urllib3==2.3.0
+wheel==0.45.1
+youtube-transcript-api==0.6.3
