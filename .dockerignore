@@ -1,0 +1,5 @@
+.git
+.gitignore
+conda*
+Dockerfile
+docker-compose.yml
