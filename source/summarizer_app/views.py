@@ -9,8 +9,7 @@ class UrlView(View):
     def post(self, request):
 
         videoId = get_video_id(request.POST["youtubeUrl"])
-
-        print(videoId)
+        
         return redirect("home")
 
 

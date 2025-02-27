@@ -1,8 +1,13 @@
+from fp.fp import FreeProxy
+from youtube_transcript_api import YouTubeTranscriptApi as YTA
+from youtube_transcript_api.formatters import TextFormatter
+
+
 class WrongUrlError(Exception):
     pass
 
 
-def get_video_id(youtubeUrl):
+def get_video_id(youtubeUrl:str) -> str:
     """
     Returns the video id of a youtube url. For example, the video id of the following url 
     
@@ -28,4 +33,17 @@ def get_video_id(youtubeUrl):
             return video_id
 
     raise WrongUrlError(f"{youtubeUrl} is not a valid youtube url")    
+
+def get_video_text(video_id: str) -> str:
+
+    # select a random proxy server to avoid blacklisting the server's ip address
+    proxy_server = FreeProxy(rand=True).get() 
+
+    # get the video transcript
+    video_transcript = YTA.get_transcript(video_id=video_id, proxies={"http": proxy_server})
+
+    # format transcript to text
+    text_formater = TextFormatter()
+    video_text = text_formater.format_transcript(video_transcript)
     
+    return video_text
