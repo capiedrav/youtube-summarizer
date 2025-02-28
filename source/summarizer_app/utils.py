@@ -1,6 +1,8 @@
 from fp.fp import FreeProxy
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.formatters import TextFormatter
+from openai import OpenAI
+import os
 
 
 class WrongUrlError(Exception):
@@ -46,4 +48,36 @@ def get_video_text(video_id: str) -> str:
     text_formater = TextFormatter()
     video_text = text_formater.format_transcript(video_transcript)
     
+    return video_text
+
+def get_text_summary(text: str) -> str:
+    
+    # setup deepseek client using openai sdk
+    deepseek_client = OpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
+
+    messages = [        
+        {
+            "role": "system",
+            "content": "You are an experienced editor that can summarize text very well."
+        },
+        {
+            "role": "user",
+            "content": f"{text}\n\nPlease summarize the key information of video transcript."
+        }        
+    ]
+
+    # call deepseek api passing the messages prompt
+    response = deepseek_client.chat.completions.create(
+        model="deepseek-chat",
+        messages=messages,
+        stream=False
+    )
+
+    # return the api response
+    return response.choices[0].message.content
+
+def get_video_summary(video_id: str) -> str:
+
+    video_text = get_video_text(video_id)
+
     return video_text

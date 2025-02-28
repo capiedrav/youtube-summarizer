@@ -7,3 +7,5 @@ services:
 
     volumes:
       - ./source:/app/source
+
+    env_file: "./.env"

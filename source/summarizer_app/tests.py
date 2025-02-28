@@ -2,10 +2,11 @@ from django.test import TestCase
 from .views import UrlView
 from django.test import SimpleTestCase, Client
 from django.urls import reverse, resolve
-from .utils import get_video_id, get_video_text, WrongUrlError
+from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary
 from unittest.mock import patch
 import fp.fp # free-proxy module
 from random import choice
+from django.conf import settings
 
 
 class UrlViewTests(TestCase):
@@ -92,8 +93,36 @@ class UtilsTests(TestCase):
         video_text = get_video_text(choice(self.video_ids))
         
         # check that the get method of the mocked object was called
-        proxy_server.get.assert_called_once()
+        proxy_server.get.assert_called_once()        
 
         # check video text is a string
         self.assertIsInstance(video_text, str)        
+
+
+    def test_get_text_summary(self):
+
+        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+            text = video_text.read()
+        
+        text_summary = get_text_summary(text)
+
+        print(text_summary)
+        self.assertIsInstance(text_summary, str)
+
+    @patch("summarizer_app.utils.get_video_text")
+    def test_get_video_summary(self, mock_get_video_text):
+                
+        # mock get_video_text function
+        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+            mock_get_video_text.return_value = video_text.read()
+        
+        video_summary = get_video_summary(choice(self.video_ids))
+        
+        mock_get_video_text.assert_called_once()
+
+        self.assertIsInstance(video_summary, str)
+
+
+
+
 
