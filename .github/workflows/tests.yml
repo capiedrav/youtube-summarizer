@@ -1,0 +1,19 @@
+# workflow to run tests before accepting pull requests in main branch
+
+name: Run Tests
+
+on: [pull_request, workflow_dispatch]
+
+jobs:
+  
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: |
+          echo "Workflow triggered in branch ${{github.ref}}."
+          echo "Workflow triggered by event ${{github.event_name}}."
+          echo "Workflow triggered by ${{github.actor}}."
+
+
+  
