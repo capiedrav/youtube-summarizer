@@ -44,10 +44,11 @@ def get_video_text(video_id: str) -> str:
     # get the video transcript
     video_transcript = YTA.get_transcript(video_id=video_id, proxies={"http": proxy_server})
 
-    # format transcript to text
+    # format transcript as text
     text_formater = TextFormatter()
     video_text = text_formater.format_transcript(video_transcript)
     
+    print("hello")
     return video_text
 
 def get_text_summary(text: str) -> str:
@@ -79,5 +80,6 @@ def get_text_summary(text: str) -> str:
 def get_video_summary(video_id: str) -> str:
 
     video_text = get_video_text(video_id)
+    video_summary = get_text_summary(video_text)
 
-    return video_text
+    return video_summary

@@ -7,6 +7,7 @@ from unittest.mock import patch
 import fp.fp # free-proxy module
 from random import choice
 from django.conf import settings
+from unittest import skip
 
 
 class UrlViewTests(TestCase):
@@ -98,31 +99,37 @@ class UtilsTests(TestCase):
         # check video text is a string
         self.assertIsInstance(video_text, str)        
 
-
+    @skip(reason="This test is time and money consuming, because it calls the deepseek api")    
     def test_get_text_summary(self):
-
+        
         with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
             text = video_text.read()
-        
+                        
         text_summary = get_text_summary(text)
-
+        
         print(text_summary)
         self.assertIsInstance(text_summary, str)
 
+    @patch("summarizer_app.utils.get_text_summary")
     @patch("summarizer_app.utils.get_video_text")
-    def test_get_video_summary(self, mock_get_video_text):
-                
+    def test_get_video_summary(self, mock_get_video_text, mock_get_text_summary):
+
+        video_id = self.video_ids[0]
+
         # mock get_video_text function
         with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
-            mock_get_video_text.return_value = video_text.read()
+            mock_get_video_text.return_value = video_text.read()        
+                 
+        # mock get_text_summary function
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as text_summary:
+            mock_get_text_summary.return_value = text_summary.read()
+
+        # call the function under test
+        video_summary = get_video_summary(video_id)
         
-        video_summary = get_video_summary(choice(self.video_ids))
-        
+        # verify that the mocked functions were called
         mock_get_video_text.assert_called_once()
+        mock_get_text_summary.assert_called_once()
 
         self.assertIsInstance(video_summary, str)
-
-
-
-
-
+        
