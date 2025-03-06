@@ -10,10 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: |
+      - name: workflow info
+        run: |
           echo "Workflow triggered in branch ${{github.ref}}."
           echo "Workflow triggered by event ${{github.event_name}}."
           echo "Workflow triggered by ${{github.actor}}."
 
-
-  
+      - name: checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Run unit tests
+        run: docker compose run --rm web sh -c "python manage.py test"
+        
