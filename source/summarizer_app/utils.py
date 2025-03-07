@@ -47,8 +47,7 @@ def get_video_text(video_id: str) -> str:
     # format transcript as text
     text_formater = TextFormatter()
     video_text = text_formater.format_transcript(video_transcript)
-    
-    print("hello")
+        
     return video_text
 
 def get_text_summary(text: str) -> str:
