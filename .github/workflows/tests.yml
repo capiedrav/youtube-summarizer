@@ -1,0 +1,24 @@
+# workflow to run tests before accepting pull requests in main branch
+
+name: Run Tests
+
+on: [pull_request, workflow_dispatch]
+
+jobs:
+  
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: workflow info
+        run: |
+          echo "Workflow triggered in branch ${{github.ref}}."
+          echo "Workflow triggered by event ${{github.event_name}}."
+          echo "Workflow triggered by ${{github.actor}}."
+
+      - name: checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Run unit tests
+        run: docker compose run --rm web sh -c "python manage.py test"
+        
