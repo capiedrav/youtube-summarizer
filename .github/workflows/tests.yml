@@ -15,7 +15,7 @@ jobs:
         
       - name: create .env file for docker compose
         run: echo "DEEPSEEK_API_KEY=${{secrets.DEEPSEEK_API_KEY}}" > .env
-
+            
       - name: Run unit tests
         run: docker compose run --rm web sh -c "python manage.py test"
         
