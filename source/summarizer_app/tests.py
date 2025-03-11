@@ -2,12 +2,15 @@ from django.test import TestCase
 from .views import UrlView
 from django.test import SimpleTestCase, Client
 from django.urls import reverse, resolve
-from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary
+from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary, \
+                   get_proxy_server
 from unittest.mock import patch
-import fp.fp # free-proxy module
+from youtube_transcript_api._errors import TranscriptsDisabled
+from fp.fp import FreeProxyException
 from random import choice
 from django.conf import settings
-from unittest import skip
+from unittest import skip, skipIf
+import os
 
 
 class UrlViewTests(TestCase):
@@ -76,35 +79,73 @@ class UtilsTests(TestCase):
         with self.assertRaises(WrongUrlError):
             get_video_id(wrong_url) 
 
-    def test_free_proxy(self):
+    def test_get_proxy_server(self):
 
         # get the ip address of a randomly selected proxy server
-        proxy = fp.fp.FreeProxy(rand=True).get()         
+        proxy = get_proxy_server()         
 
         self.assertIsInstance(proxy, str)
+        self.assertIn("http://", proxy)
 
     @patch("summarizer_app.utils.FreeProxy")
-    def test_get_video_text(self, mock_FreeProxy):
-
-        # mock proxy_server object inside get_video_text function
+    def test_get_proxy_server_raises_error_after_three_failures(self, mock_FreeProxy):
+        
+        # mock proxy_server object inside get_proxy_server function
         proxy_server = mock_FreeProxy.return_value
-        proxy_server.get.return_value = choice(self.proxy_servers) # select a proxy server randomly
+        # get method raises FreeProxyException
+        proxy_server.get.side_effect = FreeProxyException(message="There are no working proxies at this time.")
 
+        # check the exception was raised
+        with self.assertRaises(FreeProxyException):
+            get_proxy_server()
+
+        # check the get method was called three times
+        self.assertEqual(proxy_server.get.call_count, 3)
+
+    @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
+    @patch("summarizer_app.utils.get_proxy_server")
+    def test_get_video_text(self, mock_get_proxy_server):
+                
+        # mock get_proxy_server function       
+        mock_get_proxy_server.return_value = choice(self.proxy_servers)
+        
         # call the function under text with a random video id                
         video_text = get_video_text(choice(self.video_ids))
         
-        # check that the get method of the mocked object was called
-        proxy_server.get.assert_called_once()        
+        # check that the function was called
+        mock_get_proxy_server.assert_called_once()        
 
         # check video text is a string
-        self.assertIsInstance(video_text, str)        
+        self.assertIsInstance(video_text, str)
 
-    @skip(reason="This test is time and money consuming, because it calls the deepseek api")    
+    @patch("summarizer_app.utils.YTA")
+    @patch("summarizer_app.utils.get_proxy_server")
+    def test_get_video_text_raises_error_after_three_failures(self, mock_get_proxy_server, mock_YTA):
+
+        # mock get_proxy_server function       
+        mock_get_proxy_server.return_value = choice(self.proxy_servers)
+        
+        video_id = choice(self.video_ids)
+        
+        # get_transcript method raises TranscriptsDisabled exception
+        mock_YTA.get_transcript.side_effect = TranscriptsDisabled(video_id)
+
+        # check the exception was raised
+        with self.assertRaises(TranscriptsDisabled):
+            get_video_text(video_id)
+
+        # check the get_transcript method was called three times
+        self.assertEqual(mock_YTA.get_transcript.call_count, 3)
+
+    @skipIf(
+        os.environ.get("TEST_DEEPSEEK_API") is None,
+        reason="This test is time and money consuming, because it calls the deepseek api"
+     )    
     def test_get_text_summary(self):
         
         with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
             text = video_text.read()
-                        
+        
         text_summary = get_text_summary(text)
         
         print(text_summary)

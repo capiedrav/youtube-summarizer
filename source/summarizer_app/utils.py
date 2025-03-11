@@ -1,6 +1,7 @@
-from fp.fp import FreeProxy
+from fp.fp import FreeProxy, FreeProxyException
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.formatters import TextFormatter
+from youtube_transcript_api._errors import TranscriptsDisabled
 from openai import OpenAI
 import os
 
@@ -36,14 +37,40 @@ def get_video_id(youtubeUrl:str) -> str:
 
     raise WrongUrlError(f"{youtubeUrl} is not a valid youtube url")    
 
+def get_proxy_server() -> str:
+    
+    # try 3 times to get a proxy server
+    i = 0
+    while True:
+        try:
+            # select a random proxy server to avoid blacklisting the server's ip address
+            proxy_server = FreeProxy(rand=True).get()
+        except FreeProxyException as e:
+            if i < 2:
+                i += 1
+            else:
+                raise e
+        else:
+            break
+
+    return proxy_server
+
 def get_video_text(video_id: str) -> str:
-
-    # select a random proxy server to avoid blacklisting the server's ip address
-    proxy_server = FreeProxy(rand=True).get() 
-
-    # get the video transcript
-    video_transcript = YTA.get_transcript(video_id=video_id, proxies={"http": proxy_server})
-
+    
+    # try three times to get the video transcript
+    i = 0
+    while True:
+        try: # get the video transcript
+            proxy_server = get_proxy_server()            
+            video_transcript = YTA.get_transcript(video_id=video_id, proxies={"http": proxy_server})
+        except TranscriptsDisabled as e:
+            if i < 2:
+                i += 1
+            else:
+                raise e
+        else:
+            break
+    
     # format transcript as text
     text_formater = TextFormatter()
     video_text = text_formater.format_transcript(video_transcript)
@@ -82,3 +109,4 @@ def get_video_summary(video_id: str) -> str:
     video_summary = get_text_summary(video_text)
 
     return video_summary
+    
