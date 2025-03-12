@@ -14,8 +14,10 @@ jobs:
         uses: actions/checkout@v2
         
       - name: create .env file for docker compose
-        run: echo "DEEPSEEK_API_KEY=${{secrets.DEEPSEEK_API_KEY}}" > .env
-            
+        run: |
+          echo "DEEPSEEK_API_KEY=${{secrets.DEEPSEEK_API_KEY}}" > .env
+          echo "GITHUB_ACTIONS=true" >> .env
+                      
       - name: Run unit tests
         run: docker compose run --rm web sh -c "python manage.py test"
         

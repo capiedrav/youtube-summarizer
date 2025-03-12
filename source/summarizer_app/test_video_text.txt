@@ -1,0 +1,324 @@
+Justin Jackson: The advent of AI
+coding assistance has definitely
+introduced a sense of dread into
+the software development tech
+industry. I mean, listen to this
+interchange between Tim Ferris
+and investor Chris Sacca.
+Tim Ferriss: What's left?
+Chris Sacca: Here's my grand
+theory. We are super fucked. I
+think other than most computer
+science, the highest level of
+computer science, almost all of
+the rest of coding is fucking
+useless. You and I can go to
+Chat JB team and be like, I
+wanna build an app that does
+this, this, and this, and give
+me the code.
+And it spits out the code. And
+then I've literally said, hey.
+By the way, I haven't coded
+since basic. What do I do with
+this? And it's like, oh, no
+problem.
+Go here, download this, open
+this Python thing, and then
+shove it in here, and then do
+this. And it just talks you
+through it. And now it'll be
+agentic, and agent's gonna do
+all that for you. You just don't
+need to fucking do it anymore.
+Justin Jackson: Pretty dire, but
+I'm not convinced. I'm just not
+convinced that AI is going to
+replace the thoughtful expertise
+of a great web developer,
+product person, or builder. And
+I think part of the argument is
+that people are going to be
+building their own apps with AI.
+So instead of buying something
+off the shelf, they're just
+going to build their own apps
+that they will then, use deploy
+and use. Or companies will be
+doing the same thing instead of,
+you know, using software as a
+service, instead of paying
+monthly a monthly subscription
+for something.
+With AI, they're going to build
+their own internal apps that are
+perfectly customized to, you
+know, their use case. And we got
+into this in the panel podcast
+that I co host with Brian Kasel.
+Sure. Like, my my kids could
+probably build a SaaS app using
+ChatGPT, but could they really?
+Brian Casel: I don't disagree
+with you today. I just think
+that the the trajectory that
+we're on is it's just gonna get
+easier and easier for people to
+not not necessarily build more
+competitors, but just build
+their own personal solution.
+Justin Jackson: Mhmm.
+Brian Casel: Their own tools.
+Like, it doesn't have to be a
+SaaS that that's out in the
+market. It just it just has to
+be my personal metrics dashboard
+that I just use for myself
+instead of buying a metrics
+dashboard tool. You know?
+Justin Jackson: One of the
+points that Tyler King brought
+up in that conversation is that
+this all this fear about, you
+know, companies and people
+building their own personal apps
+kinda feels like a lot of the
+fear we had before with no code
+and no code builders like
+Bubble.
+Tyler King: No code is really
+more in danger than SaaS. Like,
+something you might have done
+with no code to prove out a
+concept and prototype it. Buy
+that. Just code it now.
+Justin Jackson: You know, that
+was the promise of no code is
+that anybody was going to be
+able to build their own tools,
+build their own web apps, build
+their own mobile apps. And, you
+know, these builders were going
+to replace the software
+developer. And that just hasn't
+happened. And there's a reason
+for it. Building a really good
+product requires a thoughtful,
+integrated, whole product
+approach to development.
+You can't just take off the
+shelf pieces and tape them all
+together with duct tape and
+create a cohesive, reliable
+service. And we've used products
+like this, haven't we? We all
+have. Somebody rushed out a
+product and maybe they weren't
+very good at development. It's
+just full of bugs.
+Maybe the functionality's there.
+It always doesn't feel maybe
+very smooth. You know, I think
+no code has been good in certain
+pieces. You know, if you're a
+consultant and you're looking to
+create a a client portal for
+your customers to log into, no
+code seems great at that. And
+maybe, you've replaced what you
+would typically hire a web
+developer for, with, a tool like
+Bubble.
+But it hasn't replaced, these
+actual SaaS web applications or
+mobile applications that require
+some finesse. You know, these
+need to be performant. They need
+to be reliable. They can't have
+bugs. They can't have weird,
+user experience, quiggles, you
+know.
+They have to be cohesive and
+they have to work end to end.
+This is a thought that Colleen
+Schnettler brought up in our
+conversation as well.
+Speaker 5: I think as engineers,
+we're going to be putting the
+pieces together more because the
+AI is very good at these
+individual things, but it's not
+very good at the system level
+thinking is what I've seen so
+far. And I'm a heavy user of all
+the things.
+Justin Jackson: So the threat of
+AI when it comes to software
+development does kind of remind
+me of, you know, the the whole
+no code wave that we saw. And,
+you know, there were articles,
+I'll find some, that were
+saying, you know, no code is
+going to be the end of software
+development and product
+development as we know it, and
+it didn't turn out that way. I'm
+old enough that I also remember
+the waves before that. And there
+was this whole open source wave.
+If you like search Hacker News
+for open source project
+management tool, you'll find
+dozens, maybe even hundreds
+going back fifteen, twenty years
+where you could download a
+almost perfect replica of
+Basecamp or other popular tools.
+You could use this magic deploy
+to Heroku button. I don't know
+if you remember when those were
+popular, and it would magically
+just deploy it, provision the
+server, do everything, and all
+you had to do was log in and use
+your own private version of this
+app that you hosted yourself. A
+more recent version of this
+experiment was when 37 released
+once dot com, where the idea is
+you would buy software once and,
+you know, deploy it to your own
+server and never have to pay a
+recurring subscription again.
+And they released a Slack
+competitor, Campfire, which you
+could buy once for $299, deploy
+to a server, deploy to Heroku
+quite easily. And instead of
+paying Slack hundreds or
+thousands of dollars every month
+for your company's chat, you
+could just, you know, buy it
+once and then reduce your bill
+to almost nothing.
+But in practice, that experiment
+didn't cause a wholesale change
+in our industry. Most companies
+still use Slack or Microsoft
+Teams. And the reason is
+companies don't want to be
+responsible for self hosting
+their own software. They would
+prefer to have the peace of mind
+of a professional service that
+they pay to do all the security
+updates to keep the servers up.
+Companies have enough problems
+to think about, and self hosting
+dozens and dozens of their own
+apps is not making things
+simpler.
+And if you've experimented with
+any of these, you know, the buy
+once products or deploy to
+Heroku open source alternatives,
+and I have, I've used them for
+internal projects and to build
+MVPs, What you end up with is
+just this proliferation of apps
+that you're hosting in different
+places, all which costs you
+money, by the way. It's not like
+Heroku and DigitalOcean and AWS
+is free. You're still paying for
+the hosting, but you'll
+inevitably start getting emails
+like this. Dependabot security
+warnings, bugs that are cropping
+up, the need to upgrade all the
+dependencies, the need for
+customer support, the need to
+tweak things. Software requires
+lots of maintenance, lots of
+updates, and AI is not doing
+that work right now either.
+In fact, it seems to be
+introducing more bugs than it's
+fixing. I know organizations now
+that have, you know, massive AI
+generated functions and they
+nobody at the organization
+understands how they work
+because they didn't write them.
+So when something happens, when
+something breaks, when there's
+some sort of deadlock that
+nobody can figure out, it's
+going to be difficult to fix
+those problems, a, because you
+might not have the expertise on
+your team anymore. But, b, even
+if you do have, capable web
+developers on your team, they
+have might have no idea what AI
+slop has been generated in your
+code base, how to find it, and
+how to remedy it. The truth is
+great software is the result of
+thousands of decisions made by
+humans.
+Thinking through each user flow,
+each interaction, understanding
+the customer's job to be done
+and all of the things that are
+at stake for the user. What
+makes software more enjoyable to
+use? What makes software more
+efficient? What makes software
+more effective? And these are
+creative decisions that are hard
+to make even for product people
+that have years and years of
+experience.
+And if you look at what AI is
+currently generating for text
+and images and video, sure, it
+can maybe do an okay job in a
+very specific slice of the
+creative process. But as soon as
+you ask it to generate a
+completed work end to end, it
+quickly becomes apparent that AI
+is not there, and I don't think
+it's ever going to be. Sure. You
+can ask AI to build you an app,
+and you can even direct it and
+prompt it in, an authoritative
+expert way. But what's gonna be
+produced at the end of all that
+is likely going to be fragile,
+need updates, have security
+vulnerabilities, and you're
+still going to have to host it
+somewhere.
+And that Heroku bill might be
+just as much as just paying a
+software as a service company to
+do the same thing. And then you
+get all the security updates and
+all the dependency updates and
+the customer support. I'm
+curious to hear what you think
+about all this. If you're
+watching this on YouTube, you
+can leave a comment. If you're
+listening to this as a podcast,
+you can actually reply to my
+post on Blue Sky, and it will
+add a comment to the podcast
+episode page.
+I'd love for you to try that
+out. Thanks for watching or
+listening and I'll see you next
+time.
