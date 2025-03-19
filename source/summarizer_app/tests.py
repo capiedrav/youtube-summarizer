@@ -4,6 +4,7 @@ from django.test import SimpleTestCase, Client
 from django.urls import reverse, resolve
 from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary, \
                    get_proxy_server
+from .forms import YoutubeUrlForm
 from unittest.mock import patch
 from youtube_transcript_api._errors import TranscriptsDisabled
 from fp.fp import FreeProxyException
@@ -18,20 +19,45 @@ class UrlViewTests(TestCase):
     def setUp(self):
 
         self.client = Client()
+        self.payload = {"youtubeUrl": "https://www.youtube.com/watch?v=EXWJZ2jEe6I"}
 
-    def test_summarizer_url_resolves_to_URLView(self):
+    def test_home_url_resolves_to_UrlView(self):
 
-        view = resolve(reverse("summarizer"))
+        view = resolve(reverse("home"))
 
         self.assertEqual(view.func.view_class, UrlView)
 
-    def test_can_post_to_UrlView(self):
+    def test_UrlView_renders_the_right_template(self):
+
+        response = self.client.get(reverse("home"))
+
+        self.assertTemplateUsed(response, "summarizer_app/home.html")
+
+    def test_UrlView_uses_the_right_form(self):
+
+        response = self.client.get(reverse("home"))
         
-        payload = {"youtubeUrl": "https://www.youtube.com/watch?v=EXWJZ2jEe6I"}
-        response = self.client.post(reverse("summarizer"), data=payload, follow=False)
+        self.assertIsInstance(response.context["form"], YoutubeUrlForm)
+        self.assertContains(response, response.context["form"])
+    
+    @skip(reason="not ready yet")
+    def test_can_post_to_UrlView(self):
+                
+        response = self.client.post(reverse("home"), data=self.payload, follow=False)
 
         self.assertEqual(response.status_code, 302)
 
+    @skip(reason="not ready yet")
+    @patch("summarizer_app.views.get_video_summary")
+    def test_post_to_UrlView_generates_video_summary(self, mock_get_video_summary):
+
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
+            mock_get_video_summary.return_value = test_video_summary.read()
+
+        # payload = {"youtubeUrl": "https://www.youtube.com/watch?v=EXWJZ2jEe6I"}
+        response = self.client.post(reverse("home"), data=self.payload, follow=False)
+
+        mock_get_video_summary.assert_called_once()
 
 class UtilsTests(TestCase):
     """

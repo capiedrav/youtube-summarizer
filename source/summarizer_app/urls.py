@@ -1,7 +1,9 @@
 from django.urls import path
-from .views import UrlView
+from .views import UrlView, VideoSummaryView
 
 urlpatterns = [
-    path("", UrlView.as_view(), name="summarizer"),
+    path("video-summary/<str:video_id>", VideoSummaryView.as_view(), name="video_summary"),
+    path("", UrlView.as_view(), name="home"),
+    
 ]
 
