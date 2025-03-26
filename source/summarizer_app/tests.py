@@ -11,6 +11,7 @@ from fp.fp import FreeProxyException
 from random import choice
 from django.conf import settings
 from unittest import skip, skipIf
+from django.core.exceptions import ValidationError
 import os
 
 
@@ -58,6 +59,25 @@ class UrlViewTests(TestCase):
         response = self.client.post(reverse("home"), data=self.payload, follow=False)
 
         mock_get_video_summary.assert_called_once()
+
+
+class YoutubeURLFormTests(TestCase):
+    """
+    Tests for Youtube url form.
+    """
+
+    def test_form_validates_youtube_url(self):
+
+        form = YoutubeUrlForm(data={"url": "https://www.youtube.com/watch?v=5bId3N7QZec"})
+        
+        self.assertTrue(form.is_valid())
+
+    def test_form_not_valid_on_wrong_url(self):
+
+        form = YoutubeUrlForm(data={"url": "https://www.google.com"})
+        
+        self.assertFalse(form.is_valid())        
+        
 
 class UtilsTests(TestCase):
     """
