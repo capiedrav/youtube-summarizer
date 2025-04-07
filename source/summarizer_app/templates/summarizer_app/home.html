@@ -56,6 +56,13 @@
       </div>
     </div>
   </div>
+  {% if video_summary %}
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <p>{{video_summary}}</p>
+      </div>
+    </div>
+  {% endif %}
   
   <!-- Bootstrap JS and dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>    

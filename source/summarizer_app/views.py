@@ -9,22 +9,15 @@ class UrlView(FormView):
 
     template_name = "summarizer_app/home.html"
     form_class = YoutubeUrlForm
-    # success_url = reverse("video_summary")
-
-    # def post(self, request):
-
-    #     video_id = get_video_id(request.POST["youtubeUrl"])
-    #     video_summary = get_video_summary(video_id)
-                
-    #     return redirect("home")
-
+    
     def form_valid(self, form):
+        context = self.get_context_data(form=form)
+        
+        video_id = get_video_id(form.cleaned_data["url"])
+        context["video_summary"] = get_video_summary(video_id)
 
-        return HttpResponseRedirect(reverse("video_summary"))
-
-    def form_invalid(self, form):
-
-        return HttpResponseRedirect(reverse("video_summary"))
+        return self.render_to_response(context=context)
+    
 
 class VideoSummaryView(View):
     pass
