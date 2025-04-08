@@ -98,8 +98,8 @@ class YoutubeURLFormTests(TestCase):
         form = YoutubeUrlForm(data={"url": "https://www.google.com"})
         
         self.assertFalse(form.is_valid()) 
-        self.assertEqual(form.cleaned_data.get("url"), None)       
-        
+        self.assertEqual(form.cleaned_data.get("url"), None)        
+
 
 class UtilsTests(TestCase):
     """

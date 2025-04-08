@@ -1,3 +1,4 @@
+
 from django.views.generic.edit import FormView
 from django.views import View
 from django.shortcuts import redirect, reverse, HttpResponseRedirect
@@ -21,6 +22,3 @@ class UrlView(FormView):
 
 class VideoSummaryView(View):
     pass
-
-
-
