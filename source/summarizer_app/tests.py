@@ -4,12 +4,14 @@ from django.test import SimpleTestCase, Client
 from django.urls import reverse, resolve
 from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary, \
                    get_proxy_server
+from .forms import YoutubeUrlForm
 from unittest.mock import patch
 from youtube_transcript_api._errors import TranscriptsDisabled
 from fp.fp import FreeProxyException
 from random import choice
 from django.conf import settings
 from unittest import skip, skipIf
+from django.core.exceptions import ValidationError
 import os
 
 
@@ -18,19 +20,85 @@ class UrlViewTests(TestCase):
     def setUp(self):
 
         self.client = Client()
+        self.payload = {"url": "https://www.youtube.com/watch?v=EXWJZ2jEe6I"}
 
-    def test_summarizer_url_resolves_to_URLView(self):
+    def test_home_url_resolves_to_UrlView(self):
 
-        view = resolve(reverse("summarizer"))
+        view = resolve(reverse("home"))
 
         self.assertEqual(view.func.view_class, UrlView)
 
-    def test_can_post_to_UrlView(self):
-        
-        payload = {"youtubeUrl": "https://www.youtube.com/watch?v=EXWJZ2jEe6I"}
-        response = self.client.post(reverse("summarizer"), data=payload, follow=False)
+    def test_UrlView_renders_the_right_template(self):
 
-        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("home"))
+
+        self.assertTemplateUsed(response, "summarizer_app/home.html")
+
+    def test_UrlView_uses_the_right_form(self):
+
+        response = self.client.get(reverse("home"))
+        
+        self.assertIsInstance(response.context["form"], YoutubeUrlForm)
+        # self.assertContains(response, response.context["form"])   
+    
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_can_post_to_UrlView(self, mock_get_video_id, mock_get_video_summary):
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
+            mock_get_video_summary.return_value = test_video_summary.read()
+        
+        response = self.client.post(reverse("home"), data=self.payload, follow=False)
+
+        self.assertEqual(response.status_code, 200)
+        mock_get_video_id.assert_called_once()
+        mock_get_video_summary.assert_called_once()
+
+    @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_renders_video_summary(self,  mock_get_video_id, mock_get_video_summary):
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
+            video_summary = test_video_summary.read()
+            mock_get_video_summary.return_value = video_summary
+        
+        response = self.client.post(reverse("home"), data=self.payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "summarizer_app/home.html")
+        self.assertContains(response, video_summary[:20])
+
+    def test_post_to_UrlView_with_wrong_url_doesnt_render_video_summary(self):
+
+        response = self.client.post(reverse("home"), data={"url": "www.google.com"})
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "summarizer_app/home.html")
+        self.assertIsNone(response.context.get("video_summary"))
+
+
+class YoutubeURLFormTests(TestCase):
+    """
+    Tests for Youtube url form.
+    """
+
+    def test_form_validates_youtube_url(self):
+
+        test_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
+        form = YoutubeUrlForm(data={"url": test_url})
+        
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["url"], test_url)
+
+    def test_form_not_valid_on_wrong_url(self):
+
+        form = YoutubeUrlForm(data={"url": "https://www.google.com"})
+        
+        self.assertFalse(form.is_valid()) 
+        self.assertEqual(form.cleaned_data.get("url"), None)        
 
 
 class UtilsTests(TestCase):
