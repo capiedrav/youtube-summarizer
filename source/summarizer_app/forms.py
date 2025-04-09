@@ -4,12 +4,11 @@ from django.utils.translation import gettext_lazy as _
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Fieldset, Submit, Field
 
-
  
 class YoutubeUrlForm(forms.Form):
 
     youtube_url_validator = RegexValidator(
-        regex=r"^(https?://)?(www\.)?(youtube\.com|youtu\.be)/(watch\?v=)([a-z|A-Z|0-9]+$)",
+        regex=r"^(https?://)?(www\.)?(youtube\.com|youtu\.be)/(watch\?v=)([a-z]|[A-Z]|[0-9]|[\-_])+$",
         message=_("Enter a valid youtube url.")
     )
     
