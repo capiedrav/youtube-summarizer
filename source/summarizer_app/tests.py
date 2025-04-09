@@ -13,6 +13,7 @@ from django.conf import settings
 from unittest import skip, skipIf
 from django.core.exceptions import ValidationError
 import os
+from .models import YTSummary
 
 
 class UrlViewTests(TestCase):
@@ -242,3 +243,57 @@ class UtilsTests(TestCase):
 
         self.assertIsInstance(video_summary, str)
         
+
+class YTSummaryModelTests(TestCase):
+    """
+    Tests for YTSummary model.
+    """
+
+    def setUp(self):
+
+        self.youtube_urls = [
+            "https://www.youtube.com/watch?v=5bId3N7QZec",
+            "https://www.youtube.com/watch?v=y20xJyl46dE",
+            "https://www.youtube.com/watch?v=CU5Riqb4PBg",
+        ]
+
+        self.video_ids = [
+            "5bId3N7QZec",
+            "y20xJyl46dE",
+            "CU5Riqb4PBg",
+        ]
+
+        # load video text
+        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+            self.video_text = video_text.read()        
+                 
+        # load video summary
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as text_summary:
+            self.video_summary = text_summary.read()
+
+
+    def test_can_create_YTSummary(self):
+        
+        
+        YTSummary.objects.create(
+            video_id=self.video_ids[0], 
+            url=self.youtube_urls[0],
+            video_text=self.video_text,
+            video_summary=self.video_summary)
+        
+        self.assertEqual(YTSummary.objects.count(), 1)
+        
+    def test_cant_create_YTSummary_with_wrong_url(self):
+
+        YTSummary.objects.create(
+            video_id=self.video_ids[0],
+            url="hola", # wrong url
+            video_text=self.video_text,
+            video_summary=self.video_summary
+        )
+
+        self.assertEqual(YTSummary.objects.count(), 1)
+        print(YTSummary.objects.first().url)
+        self.fail("this test should fail but is not failing!! :-(") 
+
+
