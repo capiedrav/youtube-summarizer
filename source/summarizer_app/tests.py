@@ -1,6 +1,6 @@
 from django.test import TestCase
 from .views import UrlView
-from django.test import SimpleTestCase, Client
+from django.test import Client
 from django.urls import reverse, resolve
 from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary, \
                    get_proxy_server
@@ -285,15 +285,14 @@ class YTSummaryModelTests(TestCase):
         
     def test_cant_create_YTSummary_with_wrong_url(self):
 
-        YTSummary.objects.create(
+        yt_summary = YTSummary(
             video_id=self.video_ids[0],
-            url="hola", # wrong url
+            url="www.google.com", # wrong url
             video_text=self.video_text,
             video_summary=self.video_summary
         )
 
-        self.assertEqual(YTSummary.objects.count(), 1)
-        print(YTSummary.objects.first().url)
-        self.fail("this test should fail but is not failing!! :-(") 
-
-
+        with self.assertRaises(ValidationError):
+            yt_summary.full_clean()
+            yt_summary.save()
+        self.assertEqual(YTSummary.objects.count(), 0)
