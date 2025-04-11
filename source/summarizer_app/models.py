@@ -8,4 +8,4 @@ class YTSummary(models.Model):
     url = models.URLField(validators=[youtube_url_validator, ], default=None, null=False)
     video_text = models.TextField(default=None, null=False)
     video_summary = models.TextField(default=None, null=False)    
-    created_on = models.DateField(auto_now=True)
+    created_on = models.DateTimeField(auto_now=True)

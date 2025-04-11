@@ -1,3 +1,4 @@
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from .views import UrlView
 from django.test import Client
@@ -72,6 +73,25 @@ class UrlViewTests(TestCase):
         self.assertTemplateUsed(response, "summarizer_app/home.html")
         self.assertContains(response, video_summary[:20])
 
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_saves_video_summary(self, mock_get_video_id, mock_get_video_summary):
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
+            mock_get_video_summary.return_value = test_video_summary.read()
+
+        response = self.client.post(reverse("home"), data=self.payload)
+
+        self.assertEqual(response.status_code, 200)
+        yt_summary = YTSummary.objects.get(pk=mock_get_video_id.return_value)
+
+        self.assertEqual(YTSummary.objects.count(), 1)
+        self.assertEqual(yt_summary.video_id, mock_get_video_id.return_value)
+        self.assertEqual(yt_summary.url, self.payload["url"])
+        self.assertEqual(yt_summary.video_text, "bla bla")
+        self.assertEqual(yt_summary.video_summary, mock_get_video_summary.return_value)
+
     def test_post_to_UrlView_with_wrong_url_doesnt_render_video_summary(self):
 
         response = self.client.post(reverse("home"), data={"url": "www.google.com"})
@@ -79,6 +99,14 @@ class UrlViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/home.html")
         self.assertIsNone(response.context.get("video_summary"))
+        self.assertEqual(YTSummary.objects.count(), 0)
+
+    def test_post_to_UrlView_with_wrong_url_doesnt_saves_video_summary(self):
+
+        response = self.client.post(reverse("home"), data={"url": "www.google.com"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(YTSummary.objects.count(), 0)
 
 
 class YoutubeURLFormTests(TestCase):
@@ -271,10 +299,8 @@ class YTSummaryModelTests(TestCase):
         with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as text_summary:
             self.video_summary = text_summary.read()
 
-
     def test_can_create_YTSummary(self):
-        
-        
+
         YTSummary.objects.create(
             video_id=self.video_ids[0], 
             url=self.youtube_urls[0],
@@ -282,7 +308,7 @@ class YTSummaryModelTests(TestCase):
             video_summary=self.video_summary)
         
         self.assertEqual(YTSummary.objects.count(), 1)
-        
+
     def test_cant_create_YTSummary_with_wrong_url(self):
 
         yt_summary = YTSummary(
@@ -296,3 +322,37 @@ class YTSummaryModelTests(TestCase):
             yt_summary.full_clean()
             yt_summary.save()
         self.assertEqual(YTSummary.objects.count(), 0)
+
+    def test_cant_save_YTSummary_instance_with_incomplete_fields(self):
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic(): # for the reason to use this check: https://stackoverflow.com/questions/21458387/transactionmanagementerror-you-cant-execute-queries-until-the-end-of-the-atom
+                YTSummary.objects.create( # no video_id
+                    url=self.youtube_urls[0],
+                    video_text=self.video_text,
+                    video_summary=self.video_summary
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                YTSummary.objects.create( # no url
+                    video_id=self.video_ids[0],
+                    video_text=self.video_text,
+                    video_summary=self.video_summary
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                YTSummary.objects.create( # no video_text
+                    video_id=self.video_ids[0],
+                    url=self.youtube_urls[0],
+                    video_summary=self.video_summary
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                YTSummary.objects.create( # no video_summary
+                    video_id=self.video_ids[0],
+                    url=self.youtube_urls[0],
+                    video_text=self.video_text,
+                )
