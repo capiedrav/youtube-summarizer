@@ -108,6 +108,28 @@ class UrlViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(YTSummary.objects.count(), 0)
 
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_with_existing_yt_summary_doesnt_call_get_video_summary(self, mock_get_video_id, mock_get_video_summary):
+
+        # create a video summary
+        YTSummary.objects.create(
+            video_id="EXWJZ2jEe6I",
+            url=self.payload["url"],
+            video_text="bla bla",
+            video_summary="bla bla"
+        )
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+
+        # make a POST request for the same video
+        response = self.client.post(reverse("home"), data=self.payload)
+
+        self.assertEqual(response.status_code, 200)
+        mock_get_video_id.assert_called_once()
+        self.assertEqual(mock_get_video_summary.call_count, 0) # get_video_summary was not called
+        self.assertEqual(YTSummary.objects.count(), 1)
+
 
 class YoutubeURLFormTests(TestCase):
     """

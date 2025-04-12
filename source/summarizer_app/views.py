@@ -29,11 +29,9 @@ class UrlView(FormView):
 
         if created: # a summary of the video do not exist in the database
             yt_summary.video_summary = get_video_summary(video_id)
+            yt_summary.save()
 
         context["video_summary"] = yt_summary.video_summary
-
-        # save summary in the database
-        yt_summary.save()
 
         return self.render_to_response(context=context)
     
