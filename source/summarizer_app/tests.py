@@ -57,7 +57,6 @@ class UrlViewTests(TestCase):
         mock_get_video_id.assert_called_once()
         mock_get_video_summary.assert_called_once()
 
-    @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
     def test_post_to_UrlView_renders_video_summary(self,  mock_get_video_id, mock_get_video_summary):
