@@ -1,6 +1,7 @@
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from .views import UrlView
-from django.test import SimpleTestCase, Client
+from django.test import Client
 from django.urls import reverse, resolve
 from .utils import get_video_id, get_video_text, WrongUrlError, get_text_summary, get_video_summary, \
                    get_proxy_server
@@ -13,6 +14,7 @@ from django.conf import settings
 from unittest import skip, skipIf
 from django.core.exceptions import ValidationError
 import os
+from .models import YTSummary
 
 
 class UrlViewTests(TestCase):
@@ -55,7 +57,6 @@ class UrlViewTests(TestCase):
         mock_get_video_id.assert_called_once()
         mock_get_video_summary.assert_called_once()
 
-    @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
     def test_post_to_UrlView_renders_video_summary(self,  mock_get_video_id, mock_get_video_summary):
@@ -71,6 +72,25 @@ class UrlViewTests(TestCase):
         self.assertTemplateUsed(response, "summarizer_app/home.html")
         self.assertContains(response, video_summary[:20])
 
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_saves_video_summary(self, mock_get_video_id, mock_get_video_summary):
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
+            mock_get_video_summary.return_value = test_video_summary.read()
+
+        response = self.client.post(reverse("home"), data=self.payload)
+
+        self.assertEqual(response.status_code, 200)
+        yt_summary = YTSummary.objects.get(pk=mock_get_video_id.return_value)
+
+        self.assertEqual(YTSummary.objects.count(), 1)
+        self.assertEqual(yt_summary.video_id, mock_get_video_id.return_value)
+        self.assertEqual(yt_summary.url, self.payload["url"])
+        self.assertEqual(yt_summary.video_text, "bla bla")
+        self.assertEqual(yt_summary.video_summary, mock_get_video_summary.return_value)
+
     def test_post_to_UrlView_with_wrong_url_doesnt_render_video_summary(self):
 
         response = self.client.post(reverse("home"), data={"url": "www.google.com"})
@@ -78,6 +98,36 @@ class UrlViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/home.html")
         self.assertIsNone(response.context.get("video_summary"))
+        self.assertEqual(YTSummary.objects.count(), 0)
+
+    def test_post_to_UrlView_with_wrong_url_doesnt_saves_video_summary(self):
+
+        response = self.client.post(reverse("home"), data={"url": "www.google.com"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(YTSummary.objects.count(), 0)
+
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_with_existing_yt_summary_doesnt_call_get_video_summary(self, mock_get_video_id, mock_get_video_summary):
+
+        # create a video summary
+        YTSummary.objects.create(
+            video_id="EXWJZ2jEe6I",
+            url=self.payload["url"],
+            video_text="bla bla",
+            video_summary="bla bla"
+        )
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+
+        # make a POST request for the same video
+        response = self.client.post(reverse("home"), data=self.payload)
+
+        self.assertEqual(response.status_code, 200)
+        mock_get_video_id.assert_called_once()
+        self.assertEqual(mock_get_video_summary.call_count, 0) # get_video_summary was not called
+        self.assertEqual(YTSummary.objects.count(), 1)
 
 
 class YoutubeURLFormTests(TestCase):
@@ -242,3 +292,88 @@ class UtilsTests(TestCase):
 
         self.assertIsInstance(video_summary, str)
         
+
+class YTSummaryModelTests(TestCase):
+    """
+    Tests for YTSummary model.
+    """
+
+    def setUp(self):
+
+        self.youtube_urls = [
+            "https://www.youtube.com/watch?v=5bId3N7QZec",
+            "https://www.youtube.com/watch?v=y20xJyl46dE",
+            "https://www.youtube.com/watch?v=CU5Riqb4PBg",
+        ]
+
+        self.video_ids = [
+            "5bId3N7QZec",
+            "y20xJyl46dE",
+            "CU5Riqb4PBg",
+        ]
+
+        # load video text
+        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+            self.video_text = video_text.read()        
+                 
+        # load video summary
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as text_summary:
+            self.video_summary = text_summary.read()
+
+    def test_can_create_YTSummary(self):
+
+        YTSummary.objects.create(
+            video_id=self.video_ids[0], 
+            url=self.youtube_urls[0],
+            video_text=self.video_text,
+            video_summary=self.video_summary)
+        
+        self.assertEqual(YTSummary.objects.count(), 1)
+
+    def test_cant_create_YTSummary_with_wrong_url(self):
+
+        yt_summary = YTSummary(
+            video_id=self.video_ids[0],
+            url="www.google.com", # wrong url
+            video_text=self.video_text,
+            video_summary=self.video_summary
+        )
+
+        with self.assertRaises(ValidationError):
+            yt_summary.full_clean()
+            yt_summary.save()
+        self.assertEqual(YTSummary.objects.count(), 0)
+
+    def test_cant_save_YTSummary_instance_with_incomplete_fields(self):
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic(): # for the reason to use this check: https://stackoverflow.com/questions/21458387/transactionmanagementerror-you-cant-execute-queries-until-the-end-of-the-atom
+                YTSummary.objects.create( # no video_id
+                    url=self.youtube_urls[0],
+                    video_text=self.video_text,
+                    video_summary=self.video_summary
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                YTSummary.objects.create( # no url
+                    video_id=self.video_ids[0],
+                    video_text=self.video_text,
+                    video_summary=self.video_summary
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                YTSummary.objects.create( # no video_text
+                    video_id=self.video_ids[0],
+                    url=self.youtube_urls[0],
+                    video_summary=self.video_summary
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                YTSummary.objects.create( # no video_summary
+                    video_id=self.video_ids[0],
+                    url=self.youtube_urls[0],
+                    video_text=self.video_text,
+                )
