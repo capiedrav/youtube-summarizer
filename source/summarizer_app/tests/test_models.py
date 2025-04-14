@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.test import TestCase
 from summarizer_app.models import YTSummary
 
@@ -52,13 +52,12 @@ class YTSummaryModelTests(TestCase):
         )
 
         with self.assertRaises(ValidationError):
-            yt_summary.full_clean()
             yt_summary.save()
         self.assertEqual(YTSummary.objects.count(), 0)
 
     def test_cant_save_YTSummary_instance_with_incomplete_fields(self):
 
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             with transaction.atomic(): # for the reason to use this check: https://stackoverflow.com/questions/21458387/transactionmanagementerror-you-cant-execute-queries-until-the-end-of-the-atom
                 YTSummary.objects.create( # no video_id
                     url=self.youtube_urls[0],
@@ -66,7 +65,7 @@ class YTSummaryModelTests(TestCase):
                     video_summary=self.video_summary
                 )
 
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             with transaction.atomic():
                 YTSummary.objects.create( # no url
                     video_id=self.video_ids[0],
@@ -74,7 +73,7 @@ class YTSummaryModelTests(TestCase):
                     video_summary=self.video_summary
                 )
 
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             with transaction.atomic():
                 YTSummary.objects.create( # no video_text
                     video_id=self.video_ids[0],
@@ -82,7 +81,7 @@ class YTSummaryModelTests(TestCase):
                     video_summary=self.video_summary
                 )
 
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             with transaction.atomic():
                 YTSummary.objects.create( # no video_summary
                     video_id=self.video_ids[0],
