@@ -1,5 +1,16 @@
 {
-  "image": "ghcr.io/devcontainers/templates/anaconda:2.0.2",
-  "features": {},
-  "postStartCommand": "conda env create -f ../conda_environment.yml"
+  "name": "Youtube Summarizer Codespace",
+  "image": "python:3.11-slim",
+  "features": {
+    // Install git
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": ["ms-python.python", "ecmel.vscode-html-css", "batisteo.vscode-django"]
+    }
+  },
+  "postStartCommand": "pip install --no-cache -r requirements.txt"
 }
