@@ -37,32 +37,21 @@ class UrlViewTests(TestCase):
 
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_can_post_to_UrlView(self, mock_get_video_id, mock_get_video_summary):
-
-        mock_get_video_id.return_value = "EXWJZ2jEe6I"
-        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
-            mock_get_video_summary.return_value = test_video_summary.read()
-
-        response = self.client.post(reverse("home"), data=self.payload, follow=False)
-
-        self.assertEqual(response.status_code, 200)
-        mock_get_video_id.assert_called_once()
-        mock_get_video_summary.assert_called_once()
-
-    @patch("summarizer_app.views.get_video_summary")
-    @patch("summarizer_app.views.get_video_id")
     def test_post_to_UrlView_renders_video_summary(self,  mock_get_video_id, mock_get_video_summary):
 
         mock_get_video_id.return_value = "EXWJZ2jEe6I"
         with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
-            video_summary = test_video_summary.read()
-            mock_get_video_summary.return_value = video_summary
+            with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as test_video_text:
+                video_summary = test_video_summary.read()
+                mock_get_video_summary.return_value = (video_summary, test_video_text.read())
 
         response = self.client.post(reverse("home"), data=self.payload)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/home.html")
         self.assertContains(response, video_summary[:20])
+        mock_get_video_id.assert_called_once()
+        mock_get_video_summary.assert_called_once()
 
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
@@ -70,7 +59,8 @@ class UrlViewTests(TestCase):
 
         mock_get_video_id.return_value = "EXWJZ2jEe6I"
         with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
-            mock_get_video_summary.return_value = test_video_summary.read()
+            with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as test_video_text:
+                mock_get_video_summary.return_value = (test_video_summary.read(), test_video_text.read())
 
         response = self.client.post(reverse("home"), data=self.payload)
 
@@ -80,8 +70,8 @@ class UrlViewTests(TestCase):
         self.assertEqual(YTSummary.objects.count(), 1)
         self.assertEqual(yt_summary.video_id, mock_get_video_id.return_value)
         self.assertEqual(yt_summary.url, self.payload["url"])
-        self.assertEqual(yt_summary.video_text, "bla bla")
-        self.assertEqual(yt_summary.video_summary, mock_get_video_summary.return_value)
+        self.assertEqual(yt_summary.video_summary, mock_get_video_summary.return_value[0])
+        self.assertEqual(yt_summary.video_text, mock_get_video_summary.return_value[1])
 
     def test_post_to_UrlView_with_wrong_url_doesnt_render_video_summary(self):
 

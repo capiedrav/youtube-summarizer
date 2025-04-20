@@ -143,10 +143,11 @@ class UtilsTests(TestCase):
             mock_get_text_summary.return_value = text_summary.read()
 
         # call the function under test
-        video_summary = get_video_summary(video_id)
+        video_summary, video_text = get_video_summary(video_id)
 
         # verify that the mocked functions were called
         mock_get_video_text.assert_called_once()
         mock_get_text_summary.assert_called_once()
 
         self.assertIsInstance(video_summary, str)
+        self.assertIsInstance(video_text, str)

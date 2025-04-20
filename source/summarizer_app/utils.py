@@ -103,10 +103,10 @@ def get_text_summary(text: str) -> str:
     # return the api response
     return response.choices[0].message.content
 
-def get_video_summary(video_id: str) -> str:
+def get_video_summary(video_id: str) -> tuple[str, str]:
 
     video_text = get_video_text(video_id)
     video_summary = get_text_summary(video_text)
 
-    return video_summary
+    return video_summary, video_text
     

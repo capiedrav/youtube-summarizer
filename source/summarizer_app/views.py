@@ -23,12 +23,14 @@ class UrlView(FormView):
             video_id=video_id,
             defaults={
                 "url": form.cleaned_data["url"],
-                "video_text": "bla bla",
-                "video_summary": "bla bla"
+                "video_text": "UPDATE ME!!",
+                "video_summary": "UPDATE ME!!"
             })
 
         if created: # a summary of the video do not exist in the database
-            yt_summary.video_summary = get_video_summary(video_id)
+            video_summary, video_text = get_video_summary(video_id)
+            yt_summary.video_summary = video_summary
+            yt_summary.video_text = video_text
             yt_summary.save()
 
         context["video_summary"] = yt_summary.video_summary
