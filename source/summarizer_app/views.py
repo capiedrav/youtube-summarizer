@@ -1,4 +1,4 @@
-
+from django.views.generic import DetailView
 from django.views.generic.edit import FormView
 from django.views import View
 from django.shortcuts import redirect, reverse, HttpResponseRedirect
@@ -12,6 +12,7 @@ class UrlView(FormView):
 
     template_name = "summarizer_app/home.html"
     form_class = YoutubeUrlForm
+    # success_url = "summarizer_app/video_summary.html"
     
     def form_valid(self, form):
 
@@ -35,8 +36,10 @@ class UrlView(FormView):
 
         context["video_summary"] = yt_summary.video_summary
 
-        return self.render_to_response(context=context)
+        return redirect(reverse("video_summary", kwargs={"pk": video_id}))
     
 
-class VideoSummaryView(View):
-    pass
+class VideoSummaryView(DetailView):
+
+    model = YTSummary
+    template_name = "summarizer_app/video_summary.html"

@@ -16,6 +16,15 @@ class UrlViewTests(TestCase):
         self.client = Client()
         self.payload = {"url": "https://www.youtube.com/watch?v=EXWJZ2jEe6I"}
 
+    @staticmethod
+    def config_mocks(mock_get_video_id, mock_get_video_summary):
+
+        mock_get_video_id.return_value = "EXWJZ2jEe6I"
+        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
+            with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as test_video_text:
+                video_summary = test_video_summary.read()
+                mock_get_video_summary.return_value = (video_summary, test_video_text.read())
+
     def test_home_url_resolves_to_UrlView(self):
 
         view = resolve(reverse("home"))
@@ -34,6 +43,19 @@ class UrlViewTests(TestCase):
 
         self.assertIsInstance(response.context["form"], YoutubeUrlForm)
         # self.assertContains(response, response.context["form"])
+
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_redirects_to_VideoSummaryView(self, mock_get_video_id, mock_get_video_summary):
+
+        self.config_mocks(mock_get_video_id, mock_get_video_summary)
+
+        response = self.client.post(reverse("home"), data=self.payload, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "summarizer_app/video_summary.html")
+        mock_get_video_id.assert_called_once()
+        mock_get_video_summary.assert_called_once()
 
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
