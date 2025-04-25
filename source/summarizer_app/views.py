@@ -12,8 +12,7 @@ class UrlView(FormView):
 
     template_name = "summarizer_app/home.html"
     form_class = YoutubeUrlForm
-    # success_url = "summarizer_app/video_summary.html"
-    
+
     def form_valid(self, form):
 
         context = self.get_context_data(form=form)
@@ -43,3 +42,4 @@ class VideoSummaryView(DetailView):
 
     model = YTSummary
     template_name = "summarizer_app/video_summary.html"
+    context_object_name = "yt_summary"
