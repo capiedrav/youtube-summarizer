@@ -25,11 +25,11 @@ class YTSummaryModelTests(TestCase):
         ]
 
         # load video text
-        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
             self.video_text = video_text.read()
 
         # load video summary
-        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as text_summary:
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as text_summary:
             self.video_summary = text_summary.read()
 
     def test_can_create_YTSummary(self):

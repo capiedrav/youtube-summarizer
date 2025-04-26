@@ -25,8 +25,8 @@ class UrlViewTests(TestCase):
     @staticmethod
     def config_mocks(mock_get_video_id, mock_get_video_summary):
         mock_get_video_id.return_value = "EXWJZ2jEe6I"
-        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as test_video_summary:
-            with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as test_video_text:
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as test_video_summary:
+            with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as test_video_text:
                 mock_get_video_summary.return_value = (test_video_summary.read(), test_video_text.read())
 
     def test_home_url_resolves_to_UrlView(self):
