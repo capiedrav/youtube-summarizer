@@ -1,11 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    {{ yt_summary.video_text }}
-    {{ yt_summary.video_summary }}
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="row my-2">
+      <div class="colum bg-body mb-3 rounded-2">
+        <h2 class="text-center my-2">Video Transcript</h2>
+        <p>{{ yt_summary.video_text }}</p>
+      </div>
+      <div class="colum bg-body rounded-2">
+        <h2 class="text-center my-2">Video Summary</h2>
+        <p>{{ yt_summary.video_summary }}</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
