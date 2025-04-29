@@ -120,7 +120,7 @@ class UtilsTests(TestCase):
      )
     def test_get_text_summary(self):
 
-        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
             text = video_text.read()
 
         text_summary = get_text_summary(text)
@@ -135,11 +135,11 @@ class UtilsTests(TestCase):
         video_id = self.video_ids[0]
 
         # mock get_video_text function
-        with open(settings.BASE_DIR / "summarizer_app/test_video_text.txt", "r") as video_text:
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
             mock_get_video_text.return_value = video_text.read()
 
         # mock get_text_summary function
-        with open(settings.BASE_DIR / "summarizer_app/test_video_summary.txt", "r") as text_summary:
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as text_summary:
             mock_get_text_summary.return_value = text_summary.read()
 
         # call the function under test
