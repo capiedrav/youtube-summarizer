@@ -3,30 +3,34 @@ css styles
 */
 
 body {
-    background: linear-gradient(120deg, #ff6b6b, #4ecdc4);
-    min-height: 100vh;
+    background: #f0f4f7;
 }
-.video-card {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-.video-card:hover {
-    transform: translateY(-5px);
-}
-.btn-custom {
-    background: #ff4b4b;
-    color: white;
-    padding: 12px 30px;
-    border-radius: 25px;
-    transition: all 0.3s ease;
-}
-.btn-custom:hover {
-    background: #ff3030;
-    transform: scale(1.05);
-}
-.form-control:focus {
-    border-color: #4ecdc4;
-    box-shadow: 0 0 0 0.25rem rgba(78, 205, 196, 0.25);
-}
+
+/*body {*/
+/*    background: linear-gradient(120deg, #ff6b6b, #4ecdc4);*/
+/*    min-height: 100vh;*/
+/*}*/
+/*.video-card {*/
+/*    background: rgba(255, 255, 255, 0.95);*/
+/*    border-radius: 15px;*/
+/*    box-shadow: 0 10px 30px rgba(0,0,0,0.1);*/
+/*    transition: transform 0.3s ease;*/
+/*}*/
+/*.video-card:hover {*/
+/*    transform: translateY(-5px);*/
+/*}*/
+/*.btn-custom {*/
+/*    background: #ff4b4b;*/
+/*    color: white;*/
+/*    padding: 12px 30px;*/
+/*    border-radius: 25px;*/
+/*    transition: all 0.3s ease;*/
+/*}*/
+/*.btn-custom:hover {*/
+/*    background: #ff3030;*/
+/*    transform: scale(1.05);*/
+/*}*/
+/*.form-control:focus {*/
+/*    border-color: #4ecdc4;*/
+/*    box-shadow: 0 0 0 0.25rem rgba(78, 205, 196, 0.25);*/
+/*}*/

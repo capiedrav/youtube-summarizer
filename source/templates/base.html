@@ -11,16 +11,17 @@
   <!-- Custom CSS -->
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body class="d-flex align-items-center">
-{% block content %}
-  {% comment %}
-    Put content here
-  {% endcomment %}
-{% endblock %}
-
-<!-- Bootstrap JS and dependencies -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Font Awesome -->
-<script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
+<body>
+  <div class="container">
+    {% block content %}
+      {% comment %}
+        Put content here
+      {% endcomment %}
+    {% endblock %}
+  </div>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Font Awesome -->
+{#  <script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>#}
 </body>
 </html>
