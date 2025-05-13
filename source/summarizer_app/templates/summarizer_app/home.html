@@ -4,16 +4,16 @@
 
 {% block content %}
   <div class="row">
-    <div class="col-md-7 d-flex flex-column justify-content-center">
+    <div class="col-md-7 d-flex flex-column justify-content-center text-md-start text-center">
       <h1 class="mb-3 display-3">Youtube Summarizer</h1>
-      <h3>Summarize Youtube videos for free in one click</h3>
+      <p class="fw-light fs-4">Summarize Youtube videos for free in one click</p>
     </div>
-    <div class="col-md-5">
+    <div class="col-md-5 d-none d-md-block">
       <img src="{% static 'summarizer_app/images/yt_summarizer_logo.png' %}" alt="app-logo">
     </div>
   </div>
-  <div class="row justify-content-center">
-    <div class="col-6">
+  <div class="row justify-content-center mt-3 mt-md-0">
+    <div class="col-md-6 col">
       {% crispy form %}
     </div>
   </div>

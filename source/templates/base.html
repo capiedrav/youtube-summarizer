@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body class="d-flex flex-column min-vh-100">
-  <nav class="navbar sticky-top navbar-expand-md bg-info">
+  <nav class="navbar sticky-top navbar-expand-md bg-info shadow mb-2">
     <div class="container-fluid">
       <a class="navbar-brand link-dark" href="{% url 'home' %}">
         Youtube-Summarizer
@@ -23,26 +23,26 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link active link-secondary" aria-current="page" href={% url 'home' %}>Home</a>
+            <a class="nav-link active link-dark" aria-current="page" href={% url 'home' %}>Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link link-secondary" href="#">Features</a>
+            <a class="nav-link link-dark" href="#">Features</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link link-secondary" href="#">Pricing</a>
+            <a class="nav-link link-dark" href="#">Pricing</a>
           </li>
         </ul>
       </div>
     </div>
   </nav>
-  <div class="container">
+  <div class="container mb-3">
     {% block content %}
       {% comment %}
         Put content here
       {% endcomment %}
     {% endblock %}
   </div>
-  <footer class="bg-info text-center py-3 mt-auto">
+  <footer class="bg-info text-center py-3 mt-auto mx-2 mx-md-0">
     <p>Designed by capiedrav - All rights reserved</p>
   </footer>
 
