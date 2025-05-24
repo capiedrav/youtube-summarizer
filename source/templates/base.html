@@ -7,20 +7,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube Summarizer</title>
   <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+  <!-- Bootstrap icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+{#  <link rel="stylesheet" href="{% static 'css/styles.css' %}">#}
 </head>
-<body class="d-flex align-items-center">
-{% block content %}
-  {% comment %}
-    Put content here
-  {% endcomment %}
-{% endblock %}
-
-<!-- Bootstrap JS and dependencies -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Font Awesome -->
-<script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
+<body class="d-flex flex-column min-vh-100">
+  <nav class="navbar sticky-top navbar-expand-md bg-primary-subtle shadow mb-2">
+    <div class="container-fluid">
+      <a class="navbar-brand link-dark" href="{% url 'home' %}">
+        Youtube-Summarizer
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active link-dark" aria-current="page" href={% url 'home' %}>Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link link-dark" href="#">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link link-dark" href="#">Pricing</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container mb-3">
+    {% block content %}
+      {% comment %}
+        Put content here
+      {% endcomment %}
+    {% endblock %}
+  </div>
+  <footer class="bg-primary-subtle text-center py-3 mt-auto px-2">
+    <p>Designed by capiedrav - All rights reserved</p>
+    <a href="mailto:capiedrav@gmail.com" target="_blank"><i class="bi bi-envelope fs-2 text-dark"></i></a>
+    <a href="https://github.com/capiedrav/youtube-summarizer" target="_blank"><i class="bi bi-github fs-2 mx-3 text-dark"></i></a>
+    <a href="https://about-me.capiedrav.com/" target="_blank"><i class="bi bi-person-circle fs-2 text-dark"></i></a>
+  </footer>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+  <!-- Font Awesome -->
 </body>
 </html>
