@@ -12,12 +12,19 @@
       <img src="{% static 'summarizer_app/images/yt_summarizer_logo.png' %}" alt="app-logo">
     </div>
   </div>
-  <div class="row my-5 justify-content-center">
+  <div class="row my-5 flex-column align-items-center">
     <div class="col-md-6">
       {% crispy form %}
     </div>
+    <div class="spinner-border mt-2 d-none" role="status"> <!-- spinner initially hidden -->
+      <span class="visually-hidden">Loading...</span>
+    </div>
   </div>
   <div class="row mb-md-5 mb-3 text-md-start text-center justify-content-between mx-2 mx-md-0">
+    <div class="mb-3">
+      <h2 class="display-5"> How to Summarize Youtube Videos?</h2>
+      <p class="fw-light fs-4"> You can easily use Youtube-Summarizer with just three simple steps:</p>
+    </div>
     <div class="col-md-3 bg-primary-subtle rounded pt-2 shadow">
       <h4>Step 1: Enter the URL</h4>
       <p class="fw-light">Copy the URL of the YouTube video you want to summarize and paste it into the input field above.</p>
@@ -32,3 +39,17 @@
     </div>
   </div>
 {% endblock %}
+{% block js_script %}
+<script>
+  // get references to important html elements
+  ytForm = document.querySelector("#yt-form");
+  spinner = document.querySelector(".spinner-border");
+  submitButton = document.querySelector("#submit-id-submit");
+
+  ytForm.addEventListener("submit", ()=>{ // listen for the form's submit event
+      submitButton.setAttribute("disabled", "true"); // disable submit button
+      spinner.classList.remove("d-none"); // show spinner animation
+  });
+</script>
+{% endblock %}
+

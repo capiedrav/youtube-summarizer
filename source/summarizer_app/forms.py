@@ -22,6 +22,7 @@ class YoutubeUrlForm(forms.Form):
         self.helper.form_method = "post"
         self.helper.form_action = "home"
         self.helper.form_class = "d-flex flex-column align-items-md-start align-items-center"
+        self.helper.form_id = "yt-form"
         self.helper.layout = Layout(
             Field(
                 "url",
