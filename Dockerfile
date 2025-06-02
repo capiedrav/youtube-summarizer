@@ -17,6 +17,9 @@ RUN adduser --disabled-password --no-create-home app-user
 # copy source code
 COPY ./source ./source
 
+# create folder for prod database
+RUN mkdir -p ./db
+
 # change ownership and permissions of the files
 RUN chown -R app-user:users . && chmod 700 -R .
 
