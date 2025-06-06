@@ -26,8 +26,9 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["*", ]
-
+# settings for production
+ALLOWED_HOSTS = ["youtube-summarizer.capiedrav.com", ]
+CSRF_TRUSTED_ORIGINS = ["https://youtube-summarizer.capiedrav.com", ]
 
 # Application definition
 
