@@ -17,6 +17,7 @@ jobs:
         run: |
           echo "DEEPSEEK_API_KEY=${{secrets.DEEPSEEK_API_KEY}}" > .env
           echo "GITHUB_ACTIONS=true" >> .env
+          echo "DJANGO_SECRET_KEY=${{secrets.DJANGO_SECRET_KEY}}" >> .env
                       
       - name: Run unit tests
         run: docker compose run --rm web sh -c "python manage.py test"
