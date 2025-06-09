@@ -7,7 +7,9 @@ from django.test import TestCase
 from fp.errors import FreeProxyException
 from youtube_transcript_api import TranscriptsDisabled
 from summarizer_app.utils import get_video_id, WrongUrlError, get_proxy_server, get_video_text, get_text_summary, \
-    get_video_summary
+    get_video_summary, EmptyTranscriptError
+from xml.etree.ElementTree import ParseError
+from xml.parsers.expat import ExpatError
 
 
 class UtilsTests(TestCase):
@@ -79,25 +81,41 @@ class UtilsTests(TestCase):
         # check the get method was called three times
         self.assertEqual(proxy_server.get.call_count, 3)
 
-    @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
+    # @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
+    @patch("summarizer_app.utils.YTA")
     @patch("summarizer_app.utils.get_proxy_server")
-    def test_get_video_text(self, mock_get_proxy_server):
+    def test_get_video_text(self, mock_get_proxy_server, mock_YTA):
 
         # mock get_proxy_server function
         mock_get_proxy_server.return_value = choice(self.proxy_servers)
 
+        # mock YTA's get_transcript function
+        mock_YTA.get_transcript.return_value = [
+            {
+                'text': 'Hey there',
+                'start': 0.0,
+                'duration': 1.54
+            },
+            {
+                'text': 'how are you',
+                'start': 1.54,
+                'duration': 4.16
+            },
+        ]
+
         # call the function under text with a random video id
         video_text = get_video_text(choice(self.video_ids))
 
-        # check that the function was called
+        # check that the mocked functions were called
         mock_get_proxy_server.assert_called_once()
+        mock_YTA.get_transcript.assert_called_once()
 
         # check video text is a string
         self.assertIsInstance(video_text, str)
 
     @patch("summarizer_app.utils.YTA")
     @patch("summarizer_app.utils.get_proxy_server")
-    def test_get_video_text_raises_error_after_three_failures(self, mock_get_proxy_server, mock_YTA):
+    def test_get_video_text_raises_TranscriptDisabled_error_after_three_failures(self, mock_get_proxy_server, mock_YTA):
 
         # mock get_proxy_server function
         mock_get_proxy_server.return_value = choice(self.proxy_servers)
@@ -113,6 +131,34 @@ class UtilsTests(TestCase):
 
         # check the get_transcript method was called three times
         self.assertEqual(mock_YTA.get_transcript.call_count, 3)
+
+    @patch("summarizer_app.utils.YTA")
+    @patch("summarizer_app.utils.get_proxy_server")
+    def test_get_video_text_ExpatError_or_ParseError_raises_EmptyTranscriptError(self, mock_get_proxy_server, mock_YTA):
+        """
+        This issue is discussed in:
+        https://github.com/jdepoix/youtube-transcript-api/issues/414
+        https://github.com/jdepoix/youtube-transcript-api/issues/320
+        """
+
+        # mock get_proxy_server function
+        mock_get_proxy_server.return_value = choice(self.proxy_servers)
+
+        video_id = choice(self.video_ids)
+
+        # get_transcript method raises Expat exception
+        mock_YTA.get_transcript.side_effect = ExpatError()
+
+        # check get_video_text raises EmptyTranscriptError
+        with self.assertRaises(EmptyTranscriptError):
+            get_video_text(video_id)
+
+        # get_transcript method raises ParseError exception
+        mock_YTA.get_transcript.side_effect = ParseError()
+
+        # check get_video_text raises EmptyTranscriptError
+        with self.assertRaises(EmptyTranscriptError):
+            get_video_text(video_id)
 
     @skipIf(
         os.environ.get("TEST_DEEPSEEK_API") is None,

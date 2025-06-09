@@ -1,13 +1,22 @@
 from fp.fp import FreeProxy, FreeProxyException
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.formatters import TextFormatter
-from youtube_transcript_api._errors import TranscriptsDisabled
+from youtube_transcript_api._errors import TranscriptsDisabled, CouldNotRetrieveTranscript
 from openai import OpenAI
 import os
+from xml.etree.ElementTree import ParseError
+from xml.parsers.expat import ExpatError
 
 
 class WrongUrlError(Exception):
     pass
+
+class EmptyTranscriptError(CouldNotRetrieveTranscript):
+    CAUSE_MESSAGE = (
+        "Request to YouTube was successful, but the response's content is empty, "
+        "so the transcript parsing cannot be performed. "
+        "Retry later."
+    )
 
 
 def get_video_id(youtubeUrl:str) -> str:
@@ -68,6 +77,11 @@ def get_video_text(video_id: str) -> str:
                 i += 1
             else:
                 raise e
+        except (ExpatError, ParseError):
+            # This issue is discussed in:
+            # https://github.com/jdepoix/youtube-transcript-api/issues/414
+            # https://github.com/jdepoix/youtube-transcript-api/issues/320
+             raise EmptyTranscriptError(video_id)
         else:
             break
     
