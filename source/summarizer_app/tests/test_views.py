@@ -1,15 +1,11 @@
 from unittest.mock import patch
-
 from django.conf import settings
 from django.test import TestCase, Client
 from django.urls import resolve, reverse
-
 from summarizer_app.forms import YoutubeUrlForm
 from summarizer_app.models import YTSummary
+from summarizer_app.utils import EmptyTranscriptError
 from summarizer_app.views import UrlView, VideoSummaryView
-
-
-
 
 
 class UrlViewTests(TestCase):
@@ -117,6 +113,20 @@ class UrlViewTests(TestCase):
         mock_get_video_id.assert_called_once()
         self.assertEqual(mock_get_video_summary.call_count, 0) # get_video_summary was not called
         self.assertEqual(YTSummary.objects.count(), 1)
+
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_post_to_UrlView_fails_with_EmptyTranscriptError_and_it_is_logged(self, mock_get_video_id,
+                                                                              mock_get_video_summary):
+
+        video_id = "EXWJZ2jEe6I"
+        mock_get_video_id.return_value = video_id
+        mock_get_video_summary.side_effect = EmptyTranscriptError(video_id)
+
+        # check the logger logs the error
+        with self.assertLogs(logger="summarizer_app.views", level="ERROR") as cm:
+            with self.assertRaises(EmptyTranscriptError):
+                response = self.client.post(reverse("home"), data=self.payload)
 
 
 class VideoSummaryViewTests(TestCase):
