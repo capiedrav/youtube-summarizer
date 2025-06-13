@@ -4,6 +4,7 @@ from django.shortcuts import redirect, reverse
 from .models import YTSummary
 from .utils import get_video_id, get_video_summary, EmptyTranscriptError
 from .forms import YoutubeUrlForm
+from fp.errors import FreeProxyException
 import logging
 
 
@@ -32,8 +33,8 @@ class UrlView(FormView):
         if created: # a summary of the video do not exist in the database
             try:
                 video_summary, video_text = get_video_summary(video_id)
-            except EmptyTranscriptError as e:
-                logger.error(msg="EmptyTranscriptError", exc_info=False)
+            except (EmptyTranscriptError, FreeProxyException) as e:
+                logger.error(msg=type(e).__name__, exc_info=False)
                 raise e
             else:
                 yt_summary.video_summary = video_summary
