@@ -4,9 +4,8 @@ from django.test import TestCase, Client
 from django.urls import resolve, reverse
 from summarizer_app.forms import YoutubeUrlForm
 from summarizer_app.models import YTSummary
-from summarizer_app.utils import EmptyTranscriptError
+from summarizer_app.utils import EmptyTranscriptError, RequestBlocked
 from summarizer_app.views import UrlView, VideoSummaryView
-from fp.errors import FreeProxyException
 
 
 class UrlViewTests(TestCase):
@@ -133,19 +132,19 @@ class UrlViewTests(TestCase):
 
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_FreeProxyException(self, mock_get_video_id, mock_get_video_summary):
+    def test_post_to_UrlView_logs_RequestBlocked_exception(self, mock_get_video_id, mock_get_video_summary):
 
         video_id = "EXWJZ2jEe6I"
         mock_get_video_id.return_value = video_id
-        mock_get_video_summary.side_effect = FreeProxyException(message="There are no working proxies at this time.")
+        mock_get_video_summary.side_effect = RequestBlocked(video_id)
 
         # check the logger logs and error
         with self.assertLogs(logger="summarizer_app.views", level="ERROR") as cm:
-            with self.assertRaises(FreeProxyException):
+            with self.assertRaises(RequestBlocked):
                 self.client.post(reverse("home"), data=self.payload)
 
         # check the error logged is the expected one
-        self.assertEqual(cm.output[0], "ERROR:summarizer_app.views:FreeProxyException")
+        self.assertEqual(cm.output[0], "ERROR:summarizer_app.views:RequestBlocked")
 
 
 class VideoSummaryViewTests(TestCase):

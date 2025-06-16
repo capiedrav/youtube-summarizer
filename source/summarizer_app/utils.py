@@ -1,7 +1,7 @@
-from fp.fp import FreeProxy, FreeProxyException
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
+from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
-from youtube_transcript_api._errors import TranscriptsDisabled, CouldNotRetrieveTranscript
+from youtube_transcript_api._errors import RequestBlocked, CouldNotRetrieveTranscript
 from openai import OpenAI
 import os
 from xml.etree.ElementTree import ParseError
@@ -37,54 +37,41 @@ def get_video_id(youtubeUrl:str) -> str:
 
     """
     
-    splitted_url = youtubeUrl.split("v=")
+    split_url = youtubeUrl.split("v=")
     
-    if len(splitted_url) == 2:
-        video_id = splitted_url[1]
+    if len(split_url) == 2:
+        video_id = split_url[1]
         if video_id:
             return video_id
 
     raise WrongUrlError(f"{youtubeUrl} is not a valid youtube url")    
 
-def get_proxy_server() -> str:
-    
-    # try 3 times to get a proxy server
-    i = 0
-    while True:
-        try:
-            # select a random proxy server to avoid blacklisting the server's ip address
-            proxy_server = FreeProxy(rand=True).get()
-        except FreeProxyException as e:
-            if i < 2:
-                i += 1
-            else:
-                raise e
-        else:
-            break
-
-    return proxy_server
-
 def get_video_text(video_id: str) -> str:
-    
-    # try three times to get the video transcript
-    i = 0
-    while True:
-        try: # get the video transcript
-            proxy_server = get_proxy_server()            
-            video_transcript = YTA.get_transcript(video_id=video_id, proxies={"http": proxy_server})
-        except TranscriptsDisabled as e:
-            if i < 2:
-                i += 1
-            else:
-                raise e
+
+    ytt_api = YTA( # config youtube-transcript-api using Webshare proxy credentials
+        proxy_config=WebshareProxyConfig(
+            proxy_username=os.environ.get("PROXY_USERNAME"),
+            proxy_password=os.environ.get("PROXY_PASSWORD")
+        )
+    )
+
+    # try three times to get the video transcript if the request is blocked
+    for i in range(3):
+        try:
+            video_transcript = ytt_api.fetch(video_id=video_id)
+        except RequestBlocked as error:
+            if i == 2:
+                raise error
         except (ExpatError, ParseError):
             # This issue is discussed in:
             # https://github.com/jdepoix/youtube-transcript-api/issues/414
             # https://github.com/jdepoix/youtube-transcript-api/issues/320
+            # These errors should be solved with the new version of youtube-transcript-api
+            # but just in case they appear again
              raise EmptyTranscriptError(video_id)
         else:
             break
-    
+
     # format transcript as text
     text_formater = TextFormatter()
     video_text = text_formater.format_transcript(video_transcript)
