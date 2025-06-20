@@ -4,10 +4,13 @@ from unittest import skipIf
 from unittest.mock import patch
 from django.conf import settings
 from django.test import TestCase
-from fp.errors import FreeProxyException
-from youtube_transcript_api import TranscriptsDisabled
-from summarizer_app.utils import get_video_id, WrongUrlError, get_proxy_server, get_video_text, get_text_summary, \
-    get_video_summary
+from youtube_transcript_api import RequestBlocked, FetchedTranscript, FetchedTranscriptSnippet
+from youtube_transcript_api import YouTubeTranscriptApi as YTA
+from youtube_transcript_api.proxies import WebshareProxyConfig
+from summarizer_app.utils import get_video_id, WrongUrlError, get_video_text, get_text_summary, \
+    get_video_summary, EmptyTranscriptError
+from xml.etree.ElementTree import ParseError
+from xml.parsers.expat import ExpatError
 
 
 class UtilsTests(TestCase):
@@ -56,66 +59,90 @@ class UtilsTests(TestCase):
         with self.assertRaises(WrongUrlError):
             get_video_id(wrong_url)
 
-    def test_get_proxy_server(self):
+    @skipIf(
+        condition=os.environ.get("TEST_YOUTUBE_TRANSCRIPT_API") is None,
+        reason="This test is time and money consuming, because it uses a paid proxy"
+    )
+    def test_youtube_transcript_api(self):
 
-        # get the ip address of a randomly selected proxy server
-        proxy = get_proxy_server()
+        ytt_api = YTA(
+            proxy_config=WebshareProxyConfig(
+                proxy_username=os.environ.get("PROXY_USERNAME"),
+                proxy_password=os.environ.get("PROXY_PASSWORD")
+            )
+        )
 
-        self.assertIsInstance(proxy, str)
-        self.assertIn("http://", proxy)
+        transcript = ytt_api.fetch(video_id=self.video_ids[0])
 
-    @patch("summarizer_app.utils.FreeProxy")
-    def test_get_proxy_server_raises_error_after_three_failures(self, mock_FreeProxy):
+        self.assertIsInstance(transcript, FetchedTranscript)
 
-        # mock proxy_server object inside get_proxy_server function
-        proxy_server = mock_FreeProxy.return_value
-        # get method raises FreeProxyException
-        proxy_server.get.side_effect = FreeProxyException(message="There are no working proxies at this time.")
+    @patch("summarizer_app.utils.YTA.fetch")
+    def test_get_video_text(self, mock_fetch):
 
-        # check the exception was raised
-        with self.assertRaises(FreeProxyException):
-            get_proxy_server()
-
-        # check the get method was called three times
-        self.assertEqual(proxy_server.get.call_count, 3)
-
-    @skipIf(os.environ.get("GITHUB_ACTIONS") is not None, reason="This test fails in github actions")
-    @patch("summarizer_app.utils.get_proxy_server")
-    def test_get_video_text(self, mock_get_proxy_server):
-
-        # mock get_proxy_server function
-        mock_get_proxy_server.return_value = choice(self.proxy_servers)
+        mock_fetch.return_value = FetchedTranscript(
+            snippets=[
+                FetchedTranscriptSnippet(text="Test line 1", start=0.0, duration=1.50),
+                FetchedTranscriptSnippet(text="line between", start=1.5, duration=2.0),
+                FetchedTranscriptSnippet(
+                    text="testing the end line", start=2.5, duration=3.25
+                ),
+            ],
+            language="English",
+            language_code="en",
+            is_generated=True,
+            video_id="12345",
+        )
 
         # call the function under text with a random video id
         video_text = get_video_text(choice(self.video_ids))
 
-        # check that the function was called
-        mock_get_proxy_server.assert_called_once()
+        mock_fetch.assert_called_once() # check that the mocked function was called
+        self.assertEqual(video_text, "Test line 1\nline between\ntesting the end line")
 
-        # check video text is a string
-        self.assertIsInstance(video_text, str)
-
-    @patch("summarizer_app.utils.YTA")
-    @patch("summarizer_app.utils.get_proxy_server")
-    def test_get_video_text_raises_error_after_three_failures(self, mock_get_proxy_server, mock_YTA):
-
-        # mock get_proxy_server function
-        mock_get_proxy_server.return_value = choice(self.proxy_servers)
+    @patch("summarizer_app.utils.YTA.fetch")
+    def test_get_video_text_raises_RequestBlocked_exception_after_three_failures(self, mock_fetch):
 
         video_id = choice(self.video_ids)
 
-        # get_transcript method raises TranscriptsDisabled exception
-        mock_YTA.get_transcript.side_effect = TranscriptsDisabled(video_id)
+        # fetch method raises RequestBlocked exception
+        mock_fetch.side_effect = RequestBlocked(video_id)
 
         # check the exception was raised
-        with self.assertRaises(TranscriptsDisabled):
+        with self.assertRaises(RequestBlocked):
             get_video_text(video_id)
 
         # check the get_transcript method was called three times
-        self.assertEqual(mock_YTA.get_transcript.call_count, 3)
+        self.assertEqual(mock_fetch.call_count, 3)
+
+    @patch("summarizer_app.utils.YTA.fetch")
+    def test_get_video_text_ExpatError_or_ParseError_raises_EmptyTranscriptError(self, mock_fetch):
+        """
+        This issue is discussed in:
+        https://github.com/jdepoix/youtube-transcript-api/issues/414
+        https://github.com/jdepoix/youtube-transcript-api/issues/320
+        """
+
+        video_id = choice(self.video_ids)
+
+        # fetch method raises Expat exception
+        mock_fetch.side_effect = ExpatError()
+
+        # check get_video_text raises EmptyTranscriptError
+        with self.assertRaises(EmptyTranscriptError):
+            get_video_text(video_id)
+
+        # get_transcript method raises ParseError exception
+        mock_fetch.side_effect = ParseError()
+
+        # check get_video_text raises EmptyTranscriptError
+        with self.assertRaises(EmptyTranscriptError):
+            get_video_text(video_id)
+
+        # check fetch method is call two times, one for ExpatError and the other for ParseError
+        self.assertEqual(mock_fetch.call_count, 2)
 
     @skipIf(
-        os.environ.get("TEST_DEEPSEEK_API") is None,
+        condition=os.environ.get("TEST_DEEPSEEK_API") is None,
         reason="This test is time and money consuming, because it calls the deepseek api"
      )
     def test_get_text_summary(self):
