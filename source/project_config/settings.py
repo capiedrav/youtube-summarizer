@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # third-party apps
     "crispy_forms",
     "crispy_bootstrap5",
+    "django_recaptcha",
 
 ]
 
@@ -140,3 +141,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 CRISPY_FAIL_SILENTLY = not DEBUG
+
+# django_recaptcha settings
+RECAPTCHA_PUBLIC_KEY = os.environ.get("DJANGO_RECAPTCHA_PUBLIC_KEY")
+RECAPTCHA_PRIVATE_KEY = os.environ.get("DJANGO_RECAPTCHA_PRIVATE_KEY")
+RECAPTCHA_REQUIRED_SCORE = 0.85

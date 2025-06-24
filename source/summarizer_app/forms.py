@@ -3,6 +3,8 @@ from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Fieldset, Submit, Field, Div
+from django_recaptcha.fields import ReCaptchaField
+from django_recaptcha.widgets import ReCaptchaV3
 
  
 youtube_url_validator = RegexValidator(
@@ -14,6 +16,7 @@ youtube_url_validator = RegexValidator(
 class YoutubeUrlForm(forms.Form):
        
     url = forms.URLField(label="Enter Youtube Video URL", validators=[youtube_url_validator, ])
+    captcha = ReCaptchaField(widget=ReCaptchaV3(action="youtube_url_form"))
 
     def __init__(self, *args, **kwargs):
 
@@ -33,5 +36,6 @@ class YoutubeUrlForm(forms.Form):
                 pattern="^(https?://)?(www\.)?(youtube\.com|youtu\.be)/(watch\?v=)([a-z|A-Z|0-9]+$)",
                 required="true"
             ),
+            Field("captcha"),
             Submit(name="submit", value="Summarize Video")
         )
