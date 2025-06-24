@@ -3,9 +3,9 @@ services:
     build: .
 
     volumes:
-      - db-volume-prod:/app/db
+      - db-volume-staging:/app/db
 
-    env_file: "./.env"
+    env_file: "./.env-staging"
 
     networks:
       - yt-summarizer-network
@@ -16,7 +16,7 @@ services:
 
     restart: unless-stopped
 
-    container_name: yt-summarizer
+    container_name: yt-summarizer-staging
 
   nginx:
     build: ./nginx
@@ -29,12 +29,12 @@ services:
 
     restart: unless-stopped
 
-    container_name: yt-summarizer-nginx
+    container_name: yt-summarizer-nginx-staging
 
   cloudflare_tunnel:
     image: cloudflare/cloudflared:1449-569a7c3c9ed0
 
-    env_file: "./.env"
+    env_file: "./.env-staging"
 
     command: tunnel --no-autoupdate run
 
@@ -43,10 +43,10 @@ services:
 
     restart: unless-stopped
 
-    container_name: yt-summarizer-cf-tunnel
+    container_name: yt-summarizer-cf-tunnel-staging
 
 volumes:
-  db-volume-prod:
+  db-volume-staging:
 
 networks:
   yt-summarizer-network:
