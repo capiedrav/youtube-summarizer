@@ -36,6 +36,9 @@ class YoutubeUrlForm(forms.Form):
                 pattern="^(https?://)?(www\.)?(youtube\.com|youtu\.be)/(watch\?v=)([a-z|A-Z|0-9]+$)",
                 required="true"
             ),
-            Field("captcha"),
-            Submit(name="submit", value="Summarize Video")
+            Field("captcha"), # display captcha widget
+            Submit(
+                name="submitBtn", # the button can be named anything but "submit" in order for captcha to work
+                value="Summarize Video"
+            )
         )
