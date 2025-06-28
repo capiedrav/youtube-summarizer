@@ -4,19 +4,33 @@ from unittest.mock import patch
 from django_recaptcha.client import RecaptchaResponse
 
 
+@patch("django_recaptcha.fields.client.submit")
 class YoutubeURLFormTests(TestCase):
     """
     Tests for Youtube url form.
     """
 
-    @patch("django_recaptcha.fields.client.submit")
+    @staticmethod
+    def recaptcha_response(score: float) -> RecaptchaResponse:
+        """
+        method used to create custom RecaptchaResponse object.
+
+        Args:
+            score (float): the score of the captcha response.
+
+        Returns: RecaptchaResponse
+
+        """
+
+        return RecaptchaResponse(
+            is_valid=True,
+            extra_data={"score": score},
+            action="youtube_url_form"  # this must match the action declared in the form's captcha field
+        )
+
     def test_form_validates_youtube_url(self, mocked_submit):
 
-        mocked_submit.return_value = RecaptchaResponse(
-            is_valid=True,
-            extra_data={"score": 0.9},
-            action="youtube_url_form"
-        )
+        mocked_submit.return_value = self.recaptcha_response(score=0.9) # valid captcha
 
         test_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
         form = YoutubeUrlForm(data={"url": test_url, "captcha": "PASSED"})
@@ -25,9 +39,21 @@ class YoutubeURLFormTests(TestCase):
         mocked_submit.assert_called_once()
         self.assertEqual(form.cleaned_data["url"], test_url)
 
-    def test_form_not_valid_on_wrong_url(self):
+    def test_form_invalid_on_wrong_url(self, mocked_submit):
+
+        mocked_submit.return_value = self.recaptcha_response(score=0.9) # valid captcha
 
         form = YoutubeUrlForm(data={"url": "https://www.google.com"})
         
-        self.assertFalse(form.is_valid()) 
+        self.assertFalse(form.is_valid())
         self.assertEqual(form.cleaned_data.get("url"), None)
+
+    def test_form_invalid_on_wrong_captcha(self, mocked_submit):
+
+        mocked_submit.return_value = self.recaptcha_response(score=0.2) # invalid captcha
+
+        test_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
+        form = YoutubeUrlForm(data={"url": test_url, "captcha": "PASSED"})
+
+        self.assertFalse(form.is_valid())
+        mocked_submit.assert_called_once()
