@@ -4,33 +4,32 @@ from unittest.mock import patch
 from django_recaptcha.client import RecaptchaResponse
 
 
+def custom_recaptcha_response(score: float) -> RecaptchaResponse:
+    """
+    method used to create custom RecaptchaResponse object.
+
+    Args:
+        score (float): the score of the captcha response.
+
+    Returns: RecaptchaResponse object.
+    """
+
+    return RecaptchaResponse(
+        is_valid=True,
+        extra_data={"score": score},
+        action="youtube_url_form"  # this must match the action declared in the form's captcha field
+    )
+
+
 @patch("django_recaptcha.fields.client.submit")
 class YoutubeURLFormTests(TestCase):
     """
     Tests for Youtube url form.
     """
 
-    @staticmethod
-    def recaptcha_response(score: float) -> RecaptchaResponse:
-        """
-        method used to create custom RecaptchaResponse object.
-
-        Args:
-            score (float): the score of the captcha response.
-
-        Returns: RecaptchaResponse
-
-        """
-
-        return RecaptchaResponse(
-            is_valid=True,
-            extra_data={"score": score},
-            action="youtube_url_form"  # this must match the action declared in the form's captcha field
-        )
-
     def test_form_validates_youtube_url(self, mocked_submit):
 
-        mocked_submit.return_value = self.recaptcha_response(score=0.9) # valid captcha
+        mocked_submit.return_value = custom_recaptcha_response(score=0.9) # valid captcha
 
         test_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
         form = YoutubeUrlForm(data={"url": test_url, "captcha": "PASSED"})
@@ -41,7 +40,7 @@ class YoutubeURLFormTests(TestCase):
 
     def test_form_invalid_on_wrong_url(self, mocked_submit):
 
-        mocked_submit.return_value = self.recaptcha_response(score=0.9) # valid captcha
+        mocked_submit.return_value = custom_recaptcha_response(score=0.9) # valid captcha
 
         form = YoutubeUrlForm(data={"url": "https://www.google.com"})
         
@@ -50,7 +49,7 @@ class YoutubeURLFormTests(TestCase):
 
     def test_form_invalid_on_wrong_captcha(self, mocked_submit):
 
-        mocked_submit.return_value = self.recaptcha_response(score=0.2) # invalid captcha
+        mocked_submit.return_value = custom_recaptcha_response(score=0.2) # invalid captcha
 
         test_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
         form = YoutubeUrlForm(data={"url": test_url, "captcha": "PASSED"})
