@@ -152,7 +152,6 @@ class UtilsTests(TestCase):
 
         text_summary = get_text_summary(text)
 
-        print(text_summary)
         self.assertIsInstance(text_summary, str)
 
     @patch("summarizer_app.utils.get_text_summary")
