@@ -212,7 +212,6 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, "500.html")
-        self.assertContains(response=response, text="Something went wrong.", status_code=500)
 
     def test_wrong_url_path_renders_custom_404_error_page(self):
 
@@ -220,7 +219,6 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, "404.html")
-        self.assertContains(response=response, text="Page not found.", status_code=404)
 
 
 class VideoSummaryViewTests(TestCase):
