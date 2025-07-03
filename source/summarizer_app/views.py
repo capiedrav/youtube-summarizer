@@ -6,6 +6,7 @@ from .utils import get_video_id, get_video_summary, EmptyTranscriptError
 from .forms import YoutubeUrlForm
 from youtube_transcript_api._errors import RequestBlocked
 import logging
+from django.http import HttpResponseServerError
 
 
 logger = logging.getLogger(__name__)
