@@ -167,7 +167,7 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': "{asctime} {levelname} {name} {module} {message}",
+            'format': "{asctime} {levelname} {name} {pathname} {funcName} {message}",
             'style': "{",
         }
     }

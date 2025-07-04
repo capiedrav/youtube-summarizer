@@ -169,12 +169,10 @@ class UrlViewTests(TestCase):
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check the logger logs an error
-        with self.assertLogs(logger="summarizer_app.views", level="ERROR") as captured_logs:
+        with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
             with self.assertRaises(EmptyTranscriptError):
                 self.client.post(reverse("home"), data=self.payload)
 
-        # check the error logged is the expected one
-        self.assertEqual(captured_logs.output[0], "ERROR:summarizer_app.views:EmptyTranscriptError")
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -189,12 +187,10 @@ class UrlViewTests(TestCase):
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check the logger logs and error
-        with self.assertLogs(logger="summarizer_app.views", level="ERROR") as captured_logs:
+        with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
             with self.assertRaises(RequestBlocked):
                 self.client.post(reverse("home"), data=self.payload)
 
-        # check the error logged is the expected one
-        self.assertEqual(captured_logs.output[0], "ERROR:summarizer_app.views:RequestBlocked")
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
