@@ -7,5 +7,6 @@ services:
 
     volumes:
       - ./source:/app/source
+      - ./nginx:/app/nginx # collect static files here
 
     env_file: "./.env"
