@@ -143,7 +143,6 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 STATIC_ROOT = BASE_DIR / "../nginx/static_files"
-
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
@@ -163,3 +162,29 @@ CRISPY_FAIL_SILENTLY = not DEBUG
 RECAPTCHA_PUBLIC_KEY = os.environ.get("DJANGO_RECAPTCHA_PUBLIC_KEY", default="no key")
 RECAPTCHA_PRIVATE_KEY = os.environ.get("DJANGO_RECAPTCHA_PRIVATE_KEY", default="no key")
 RECAPTCHA_REQUIRED_SCORE = 0.85
+
+# config logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    "loggers": {
+        "summarizer_app": {
+            "handlers": ["console", ],
+            "level": "ERROR"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "ERROR",
+            "formatter": "verbose"
+        }
+    },
+    'formatters': {
+        'verbose': {
+            'format': "{asctime} {levelname} {name} {pathname} {funcName} {message}",
+            'style': "{",
+        }
+    }
+
+}
