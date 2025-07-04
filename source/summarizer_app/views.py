@@ -2,9 +2,8 @@ from django.views.generic import DetailView
 from django.views.generic.edit import FormView
 from django.shortcuts import redirect, reverse
 from .models import YTSummary
-from .utils import get_video_id, get_video_summary, EmptyTranscriptError
+from .utils import get_video_id, get_video_summary
 from .forms import YoutubeUrlForm
-from youtube_transcript_api._errors import RequestBlocked
 import logging
 
 
@@ -33,8 +32,8 @@ class UrlView(FormView):
         if created: # a summary of the video do not exist in the database
             try:
                 video_summary, video_text = get_video_summary(video_id)
-            except (EmptyTranscriptError, RequestBlocked) as e:
-                logger.error(msg=type(e).__name__, exc_info=False)
+            except Exception as e: # log any exception
+                logger.error(msg=f"{type(e).__name__} {form.cleaned_data['url']}")
                 raise e
             else:
                 yt_summary.video_summary = video_summary

@@ -169,12 +169,10 @@ class UrlViewTests(TestCase):
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check the logger logs an error
-        with self.assertLogs(logger="summarizer_app.views", level="ERROR") as cm:
+        with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
             with self.assertRaises(EmptyTranscriptError):
                 self.client.post(reverse("home"), data=self.payload)
 
-        # check the error logged is the expected one
-        self.assertEqual(cm.output[0], "ERROR:summarizer_app.views:EmptyTranscriptError")
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -189,13 +187,34 @@ class UrlViewTests(TestCase):
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check the logger logs and error
-        with self.assertLogs(logger="summarizer_app.views", level="ERROR") as cm:
+        with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
             with self.assertRaises(RequestBlocked):
                 self.client.post(reverse("home"), data=self.payload)
 
-        # check the error logged is the expected one
-        self.assertEqual(cm.output[0], "ERROR:summarizer_app.views:RequestBlocked")
         mocked_submit.assert_called_once()
+
+    @patch("django_recaptcha.fields.client.submit")
+    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.views.get_video_id")
+    def test_exceptions_in_UrlView_renders_custom_server_error_page(self, mock_get_video_id, mock_get_video_summary,
+                                                                        mocked_submit):
+        video_id = "EXWJZ2jEe6I"
+        mock_get_video_id.return_value = video_id
+        mock_get_video_summary.side_effect = RequestBlocked(video_id)
+        mocked_submit.return_value = custom_recaptcha_response(score=0.9)
+
+        self.client.raise_request_exception = False # do not capture the exception to be raised in the POST request
+        response = self.client.post(reverse("home"), data=self.payload)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertTemplateUsed(response, "500.html")
+
+    def test_wrong_url_path_renders_custom_404_error_page(self):
+
+        response = self.client.get("/wrong-url/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTemplateUsed(response, "404.html")
 
 
 class VideoSummaryViewTests(TestCase):

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+	<div class="row">
+    <div class="col-lg d-flex flex-column justify-content-between align-items-center">
+      <h1 class="fw-light">500 Internal Server Error</h1>
+      <img class="mw-100 mt-3" src="{% static 'images/500.png' %}" alt="500 error img">
+      <h2 class="fw-light mb-5 text-center">Oops!...Something went wrong. Try again later.</h2>
+      <a href="{% url 'home' %}" class="btn btn-primary btn-lg">Go to Home</a>
+    </div>
+  </div>
+{% endblock %}
