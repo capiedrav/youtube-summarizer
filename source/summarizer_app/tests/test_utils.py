@@ -77,7 +77,7 @@ class UtilsTests(TestCase):
         self.assertIsInstance(transcript, FetchedTranscript)
 
     @patch("summarizer_app.utils.YTA.fetch")
-    def test_get_video_text(self, mock_fetch):
+    async def test_get_video_text(self, mock_fetch):
 
         mock_fetch.return_value = FetchedTranscript(
             snippets=[
@@ -94,13 +94,13 @@ class UtilsTests(TestCase):
         )
 
         # call the function under text with a random video id
-        video_text = get_video_text(choice(self.video_ids))
+        video_text = await get_video_text(choice(self.video_ids))
 
         mock_fetch.assert_called_once() # check that the mocked function was called
         self.assertEqual(video_text, "Test line 1\nline between\ntesting the end line")
 
     @patch("summarizer_app.utils.YTA.fetch")
-    def test_get_video_text_raises_RequestBlocked_exception_after_three_failures(self, mock_fetch):
+    async def test_get_video_text_raises_RequestBlocked_exception_after_three_failures(self, mock_fetch):
 
         video_id = choice(self.video_ids)
 
@@ -109,13 +109,13 @@ class UtilsTests(TestCase):
 
         # check the exception was raised
         with self.assertRaises(RequestBlocked):
-            get_video_text(video_id)
+           await get_video_text(video_id)
 
         # check the get_transcript method was called three times
         self.assertEqual(mock_fetch.call_count, 3)
 
     @patch("summarizer_app.utils.YTA.fetch")
-    def test_get_video_text_ExpatError_or_ParseError_raises_EmptyTranscriptError(self, mock_fetch):
+    async def test_get_video_text_ExpatError_or_ParseError_raises_EmptyTranscriptError(self, mock_fetch):
         """
         This issue is discussed in:
         https://github.com/jdepoix/youtube-transcript-api/issues/414
@@ -129,14 +129,14 @@ class UtilsTests(TestCase):
 
         # check get_video_text raises EmptyTranscriptError
         with self.assertRaises(EmptyTranscriptError):
-            get_video_text(video_id)
+            await get_video_text(video_id)
 
         # get_transcript method raises ParseError exception
         mock_fetch.side_effect = ParseError()
 
         # check get_video_text raises EmptyTranscriptError
         with self.assertRaises(EmptyTranscriptError):
-            get_video_text(video_id)
+            await get_video_text(video_id)
 
         # check fetch method is call two times, one for ExpatError and the other for ParseError
         self.assertEqual(mock_fetch.call_count, 2)
@@ -145,19 +145,19 @@ class UtilsTests(TestCase):
         condition=os.environ.get("TEST_DEEPSEEK_API") is None,
         reason="This test is time and money consuming, because it calls the deepseek api"
      )
-    def test_get_text_summary(self):
+    async def test_get_text_summary(self):
 
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
             text = video_text.read()
 
-        text_summary = get_text_summary(text)
+        text_summary = await get_text_summary(text)
 
         print(text_summary)
         self.assertIsInstance(text_summary, str)
 
     @patch("summarizer_app.utils.get_text_summary")
     @patch("summarizer_app.utils.get_video_text")
-    def test_get_video_summary(self, mock_get_video_text, mock_get_text_summary):
+    async def test_get_video_summary(self, mock_get_video_text, mock_get_text_summary):
 
         video_id = self.video_ids[0]
 
@@ -170,7 +170,7 @@ class UtilsTests(TestCase):
             mock_get_text_summary.return_value = text_summary.read()
 
         # call the function under test
-        video_summary, video_text = get_video_summary(video_id)
+        video_summary, video_text = await get_video_summary(video_id)
 
         # verify that the mocked functions were called
         mock_get_video_text.assert_called_once()

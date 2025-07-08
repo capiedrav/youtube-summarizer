@@ -1,15 +1,17 @@
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
-from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
+from youtube_transcript_api.proxies import WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
 from youtube_transcript_api._errors import RequestBlocked, CouldNotRetrieveTranscript
-from openai import OpenAI
+from openai import AsyncOpenAI
 import os
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
+from asgiref.sync import sync_to_async
 
 
 class WrongUrlError(Exception):
     pass
+
 
 class EmptyTranscriptError(CouldNotRetrieveTranscript):
     CAUSE_MESSAGE = (
@@ -46,7 +48,7 @@ def get_video_id(youtubeUrl:str) -> str:
 
     raise WrongUrlError(f"{youtubeUrl} is not a valid youtube url")    
 
-def get_video_text(video_id: str) -> str:
+async def get_video_text(video_id: str) -> str:
 
     ytt_api = YTA( # config youtube-transcript-api using Webshare proxy credentials
         proxy_config=WebshareProxyConfig(
@@ -55,10 +57,11 @@ def get_video_text(video_id: str) -> str:
         )
     )
 
+    async_fetch = sync_to_async(ytt_api.fetch)
     # try three times to get the video transcript if the request is blocked
     for i in range(3):
         try:
-            video_transcript = ytt_api.fetch(video_id=video_id)
+            video_transcript = await async_fetch(video_id=video_id)
         except RequestBlocked as error:
             if i == 2:
                 raise error
@@ -78,10 +81,10 @@ def get_video_text(video_id: str) -> str:
         
     return video_text
 
-def get_text_summary(text: str) -> str:
+async def get_text_summary(text: str) -> str:
     
     # setup deepseek client using openai sdk
-    deepseek_client = OpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
+    deepseek_client = AsyncOpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
 
     messages = [        
         {
@@ -95,7 +98,7 @@ def get_text_summary(text: str) -> str:
     ]
 
     # call deepseek api passing the messages prompt
-    response = deepseek_client.chat.completions.create(
+    response = await deepseek_client.chat.completions.create(
         model="deepseek-chat",
         messages=messages,
         stream=False
@@ -104,10 +107,10 @@ def get_text_summary(text: str) -> str:
     # return the api response
     return response.choices[0].message.content
 
-def get_video_summary(video_id: str) -> tuple[str, str]:
+async def get_video_summary(video_id: str) -> tuple[str, str]:
 
-    video_text = get_video_text(video_id)
-    video_summary = get_text_summary(video_text)
+    video_text = await get_video_text(video_id)
+    video_summary = await get_text_summary(video_text)
 
     return video_summary, video_text
     
