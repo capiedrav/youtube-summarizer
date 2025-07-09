@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    "daphne", # asgi server
     'django.contrib.staticfiles',
 
     # local apps
@@ -46,7 +47,6 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "django_recaptcha",
-
 ]
 
 MIDDLEWARE = [
@@ -174,3 +174,6 @@ LOGGING = {
     }
 
 }
+
+# daphne config
+ASGI_APPLICATION = "project_config.asgi.application"
