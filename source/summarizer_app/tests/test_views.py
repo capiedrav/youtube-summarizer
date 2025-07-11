@@ -50,7 +50,7 @@ class UrlViewTests(TestCase):
     @patch("django_recaptcha.fields.client.submit")
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    async def test_post_to_UrlView_redirects_to_VideoSummaryView(self, mock_get_video_id, mock_get_video_summary,
+    def test_post_to_UrlView_redirects_to_VideoSummaryView(self, mock_get_video_id, mock_get_video_summary,
                                                            mocked_submit):
 
         self.config_mocks(mock_get_video_id, mock_get_video_summary, mocked_submit)

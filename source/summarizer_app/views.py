@@ -19,6 +19,23 @@ class UrlView(FormView):
     template_name = "summarizer_app/home.html"
     form_class = YoutubeUrlForm
 
+    async def get(self, request, *args, **kwargs):
+
+        return self.render_to_response(self.get_context_data())
+
+    async def post(self, request, *args, **kwargs):
+
+        form = self.get_form()
+        if form.is_valid():
+            return await self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    async def put(self, *args, **kwargs):
+
+        return self.post(*args, **kwargs)
+
+
     async def form_valid(self, form):
 
         context = self.get_context_data(form=form)
