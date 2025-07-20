@@ -1,4 +1,5 @@
 import os
+import shutil
 from random import choice
 from unittest import skipIf
 from unittest.mock import patch
@@ -11,6 +12,9 @@ from summarizer_app.utils import get_video_id, WrongUrlError, get_video_text, ge
     get_video_summary, EmptyTranscriptError
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
+from pytubefix import YouTube
+from tempfile import NamedTemporaryFile
+import requests
 
 
 class UtilsTests(TestCase):
@@ -30,14 +34,6 @@ class UtilsTests(TestCase):
             "5bId3N7QZec",
             "y20xJyl46dE",
             "CU5Riqb4PBg",
-        ]
-
-        self.proxy_servers = [
-            "http://3.141.217.225:80",
-            "http://71.14.218.2:8080",
-            "http://71.14.218.2:8080",
-            "http://52.196.1.182:80",
-            "http://18.228.149.161:80"
         ]
 
     def test_extract_videoId_from_youtube_url(self):
@@ -178,3 +174,42 @@ class UtilsTests(TestCase):
 
         self.assertIsInstance(video_summary, str)
         self.assertIsInstance(video_text, str)
+
+
+class PytubeFixTests(TestCase):
+    """
+    Tests for pytubefix module.
+    """
+
+    def setUp(self):
+
+        self.youtube_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
+
+        # concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
+        proxy_username = os.getenv("PROXY_USERNAME") + "-rotate"
+        proxy_password = os.getenv("PROXY_PASSWORD")
+
+        # config proxies
+        self.proxies = {
+            "http": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+            "https": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+        }
+
+    def test_get_video_title(self):
+
+        yt = YouTube(url=self.youtube_url, proxies=self.proxies)
+
+        self.assertEqual(yt.title, "how programmers overprepare for job interviews")
+
+    def test_get_video_thumbnail(self):
+
+        yt = YouTube(url=self.youtube_url, proxies=self.proxies)
+
+        req = requests.get(yt.thumbnail_url, proxies=self.proxies, stream=True)
+
+        with NamedTemporaryFile(mode="wb", suffix=".jpg") as thumbnail:
+            req.raw.decode_content = True
+            shutil.copyfileobj(req.raw, thumbnail)
+
+            self.assertIn(".jpg", thumbnail.name)
+
