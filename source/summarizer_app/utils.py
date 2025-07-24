@@ -1,3 +1,4 @@
+import shutil
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
@@ -6,6 +7,17 @@ from openai import OpenAI
 import os
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
+from pytubefix import YouTube
+import requests
+from django.conf import settings
+
+# concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
+proxy_username = os.getenv("PROXY_USERNAME") + "-rotate"
+proxy_password = os.getenv("PROXY_PASSWORD")
+pytubefix_proxies = {
+    "http": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+    "https": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+}
 
 
 class WrongUrlError(Exception):
@@ -103,6 +115,23 @@ def get_text_summary(text: str) -> str:
 
     # return the api response
     return response.choices[0].message.content
+
+def get_video_title(youtube_url: str) -> str:
+
+    return YouTube(url=youtube_url, proxies=pytubefix_proxies).title
+
+def get_video_thumbnail(youtube_url: str) -> None:
+
+    thumbnail_url = YouTube(url=youtube_url, proxies=pytubefix_proxies).thumbnail_url
+    response = requests.get(thumbnail_url, proxies=pytubefix_proxies, stream=True)
+
+    if response.status_code == 200:
+        video_id = get_video_id(youtube_url)
+        thumbnail_path = f"{settings.MEDIA_ROOT}/thumbnails/{video_id}.jpg"
+
+        with open(thumbnail_path, "wb") as file:
+            response.raw.decode_content = True
+            shutil.copyfileobj(response.raw, file)
 
 def get_video_summary(video_id: str) -> tuple[str, str]:
 
