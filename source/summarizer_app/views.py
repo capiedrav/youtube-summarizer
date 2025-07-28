@@ -22,7 +22,7 @@ class UrlView(FormView):
         video_id = get_video_id(form.cleaned_data["url"])
 
         # check if a summary of the video already exists in the database
-        yt_summary, created = YTSummary.objects.get_or_create(
+        yt_summary, new_video_summary = YTSummary.objects.get_or_create(
             video_id=video_id,
             defaults={
                 "url": form.cleaned_data["url"],
@@ -30,7 +30,7 @@ class UrlView(FormView):
                 "video_summary": "UPDATE ME!!"
             })
 
-        if created: # a summary of the video do not exist in the database
+        if new_video_summary: # a summary of the video do not exist in the database
             try:
                 video_summary, video_text = get_video_summary(video_id)
             except Exception as e: # log any exception
