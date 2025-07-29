@@ -45,7 +45,7 @@ class YTSummaryModelTests(TestCase):
         self.assertEqual(YTSummary.objects.count(), 1)
 
         # check thumbnails are saved at expected location
-        expected_path = (settings.MEDIA_ROOT / "thumbnails/thumbnail.jpg").resolve() # normalize path
+        expected_path = (settings.THUMBNAILS_PATH / "thumbnail.jpg").resolve() # normalize path
         self.assertEqual(expected_path.as_posix(), YTSummary.objects.first().thumbnail.path)
 
     def test_create_YTSummary_with_default_title_and_thumbnail(self):
@@ -63,7 +63,7 @@ class YTSummaryModelTests(TestCase):
         self.assertEqual(yt_summary.title, "N/A")
 
         # check default thumbnail was saved
-        expected_path = (settings.MEDIA_ROOT / "thumbnails/thumbnail_not_found.jpg").resolve() # normalize path
+        expected_path = (settings.THUMBNAILS_PATH / "thumbnail_not_found.jpg").resolve() # normalize path
         self.assertEqual(expected_path.as_posix(), yt_summary.thumbnail.path)
 
     def test_cant_create_YTSummary_with_wrong_url(self):

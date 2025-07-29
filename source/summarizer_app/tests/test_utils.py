@@ -175,18 +175,46 @@ class UtilsTests(TestCase):
         mocked_get.return_value.raw = io.BytesIO(b"thumbnail data")
         mocked_get.return_value.raw.decode_content = False
 
-        get_video_thumbnail(youtube_url=self.youtube_urls[0])
+        thumbnail_path = get_video_thumbnail(youtube_url=self.youtube_urls[0])
 
-        thumbnail_path = f"{settings.MEDIA_ROOT}/thumbnails/{self.video_ids[0]}.jpg"
-        mocked_open.assert_called_with(thumbnail_path, "wb") # check open was called with the right parameters
+        expected_path = (settings.THUMBNAILS_PATH / f"{self.video_ids[0]}.jpg").resolve().as_posix()
+        self.assertEqual(expected_path, thumbnail_path)
+        mocked_open.assert_called_with(expected_path, "wb") # check open was called with the right parameters
         mocked_get.assert_called_once()
         mocked_copyfileobj.assert_called_once()
 
+    @patch("summarizer_app.utils.shutil.copyfileobj")
+    @patch("summarizer_app.utils.open")
+    @patch("summarizer_app.utils.requests.get")
+    @patch("summarizer_app.utils.YouTube.thumbnail_url", new_callable=PropertyMock)
+    def test_cant_get_video_thumbnail_on_wrong_response(self, mocked_thumbnail_url, mocked_get, mocked_open,
+                                                        mocked_copyfileobj):
+
+        mocked_thumbnail_url.return_value = "www.youtube-video-thumbnail.com"
+        mocked_get.return_value = Response()
+        mocked_get.return_value.status_code = 404 # wrong status code
+        mocked_get.return_value.raw = io.BytesIO(b"") # no thumbnail data
+        mocked_get.return_value.raw.decode_content = False
+
+        thumbnail_path = get_video_thumbnail(youtube_url=self.youtube_urls[0])
+
+        self.assertIsNone(thumbnail_path) # no thumbnail path
+        mocked_get.assert_called_once()
+        mocked_open.assert_not_called()
+        mocked_copyfileobj.assert_not_called()
+
+    @patch("summarizer_app.utils.get_video_thumbnail")
+    @patch("summarizer_app.utils.get_video_title")
     @patch("summarizer_app.utils.get_text_summary")
     @patch("summarizer_app.utils.get_video_text")
-    def test_get_video_summary(self, mock_get_video_text, mock_get_text_summary):
+    @patch("summarizer_app.utils.get_video_id")
+    def test_get_video_summary(self, mocked_get_video_id, mock_get_video_text, mock_get_text_summary,
+                               mocked_get_video_title, mocked_get_video_thumbnail):
 
+        youtube_url = self.youtube_urls[0]
         video_id = self.video_ids[0]
+
+        mocked_get_video_id.return_value = video_id
 
         # mock get_video_text function
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
@@ -196,15 +224,24 @@ class UtilsTests(TestCase):
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as text_summary:
             mock_get_text_summary.return_value = text_summary.read()
 
+        mocked_get_video_title.return_value = "video title"
+        mocked_get_video_thumbnail.return_value = "thumbnail path"
+
         # call the function under test
-        video_summary, video_text = get_video_summary(video_id)
+        video_summary, video_text, video_title, video_thumbnail = get_video_summary(youtube_url)
 
         # verify that the mocked functions were called
-        mock_get_video_text.assert_called_once()
+        mocked_get_video_id.assert_called_once_with(youtube_url)
+        mock_get_video_text.assert_called_once_with(video_id)
         mock_get_text_summary.assert_called_once()
+        mocked_get_video_title.assert_called_once_with(youtube_url)
+        mocked_get_video_thumbnail.assert_called_once_with(youtube_url)
 
-        self.assertIsInstance(video_summary, str)
-        self.assertIsInstance(video_text, str)
+        # verify the get_video_summary returns the correct information
+        self.assertEqual(video_summary, mock_get_text_summary.return_value)
+        self.assertEqual(video_text, mock_get_video_text.return_value)
+        self.assertEqual(video_title, mocked_get_video_title.return_value)
+        self.assertEqual(video_thumbnail, mocked_get_video_thumbnail.return_value)
 
 
 @skipIf(
