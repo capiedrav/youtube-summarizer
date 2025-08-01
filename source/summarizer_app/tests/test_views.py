@@ -24,7 +24,12 @@ class UrlViewTests(TestCase):
         mock_get_video_id.return_value = "EXWJZ2jEe6I"
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as test_video_summary:
             with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as test_video_text:
-                mock_get_video_summary.return_value = (test_video_summary.read(), test_video_text.read())
+                mock_get_video_summary.return_value = (
+                    test_video_summary.read(),
+                    test_video_text.read(),
+                    "Base 5x91 | ¿Será juzgado Milei por la cryptoestafa piramidal LIBRA?", # title
+                    (settings.THUMBNAILS_PATH / "EXWJZ2jEe6I.jpg").resolve().as_posix() # thumbnail path
+                )
 
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
@@ -59,8 +64,8 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/video_summary.html")
-        mock_get_video_id.assert_called_once()
-        mock_get_video_summary.assert_called_once()
+        mock_get_video_id.assert_called_once_with(self.payload["url"])
+        mock_get_video_summary.assert_called_once_with(self.payload["url"])
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -80,8 +85,10 @@ class UrlViewTests(TestCase):
         self.assertEqual(yt_summary.url, self.payload["url"])
         self.assertEqual(yt_summary.video_summary, mock_get_video_summary.return_value[0])
         self.assertEqual(yt_summary.video_text, mock_get_video_summary.return_value[1])
-        mock_get_video_id.assert_called_once()
-        mock_get_video_summary.assert_called_once()
+        self.assertEqual(yt_summary.title, mock_get_video_summary.return_value[2])
+        self.assertEqual(yt_summary.thumbnail, mock_get_video_summary.return_value[3])
+        mock_get_video_id.assert_called_once_with(self.payload["url"])
+        mock_get_video_summary.assert_called_once_with(self.payload["url"])
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -153,7 +160,7 @@ class UrlViewTests(TestCase):
         response = self.client.post(reverse("home"), data=self.payload)
 
         self.assertEqual(response.status_code, 302)
-        mock_get_video_id.assert_called_once()
+        mock_get_video_id.assert_called_once_with(self.payload["url"])
         self.assertEqual(mock_get_video_summary.call_count, 0) # get_video_summary was not called
         self.assertEqual(YTSummary.objects.count(), 1)
         mocked_submit.assert_called_once()
@@ -174,6 +181,8 @@ class UrlViewTests(TestCase):
                 self.client.post(reverse("home"), data=self.payload)
 
         mocked_submit.assert_called_once()
+        mock_get_video_summary.assert_called_once_with(self.payload["url"])
+        mock_get_video_id.assert_called_once_with(self.payload["url"])
 
     @patch("django_recaptcha.fields.client.submit")
     @patch("summarizer_app.views.get_video_summary")
@@ -192,6 +201,8 @@ class UrlViewTests(TestCase):
                 self.client.post(reverse("home"), data=self.payload)
 
         mocked_submit.assert_called_once()
+        mock_get_video_summary.assert_called_once_with(self.payload["url"])
+        mock_get_video_id.assert_called_once_with(self.payload["url"])
 
     @patch("django_recaptcha.fields.client.submit")
     @patch("summarizer_app.views.get_video_summary")
@@ -208,6 +219,8 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, "500.html")
+        mock_get_video_summary.assert_called_once_with(self.payload["url"])
+        mock_get_video_id.assert_called_once_with(self.payload["url"])
 
     def test_wrong_url_path_renders_custom_404_error_page(self):
 
