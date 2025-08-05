@@ -12,8 +12,8 @@ import requests
 from django.conf import settings
 
 # concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
-proxy_username = os.getenv("PROXY_USERNAME") + "-rotate"
-proxy_password = os.getenv("PROXY_PASSWORD")
+proxy_username = os.getenv("PROXY_USERNAME", default="no_username") + "-rotate"
+proxy_password = os.getenv("PROXY_PASSWORD", default="no_password")
 pytubefix_proxies = {
     "http": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
     "https": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
@@ -123,16 +123,17 @@ def get_video_title(youtube_url: str) -> str:
 def get_video_thumbnail(youtube_url: str) -> str | None:
 
     thumbnail_url = YouTube(url=youtube_url, proxies=pytubefix_proxies).thumbnail_url
-    response = requests.get(thumbnail_url, proxies=pytubefix_proxies, stream=True)
+    response = requests.get(url=thumbnail_url, proxies=pytubefix_proxies, stream=True)
 
     if response.status_code == 200:
         video_id = get_video_id(youtube_url)
+        # absolute path to where the thumbnail is stored
         thumbnail_path = (settings.THUMBNAILS_PATH / f"{video_id}.jpg").resolve().as_posix()
-        with open(thumbnail_path, "wb") as file:
+        with open(thumbnail_path, "wb") as file: # save thumbnail
             response.raw.decode_content = True
             shutil.copyfileobj(response.raw, file)
 
-        return thumbnail_path
+        return f"thumbnails/{video_id}.jpg" # path relative to settings.MEDIA_ROOT
 
     return None
 

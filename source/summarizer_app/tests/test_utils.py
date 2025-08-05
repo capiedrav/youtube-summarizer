@@ -11,7 +11,7 @@ from youtube_transcript_api import RequestBlocked, FetchedTranscript, FetchedTra
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import WebshareProxyConfig
 from summarizer_app.utils import get_video_id, WrongUrlError, get_video_text, get_text_summary, \
-    get_video_summary, EmptyTranscriptError, get_video_title, get_video_thumbnail
+    get_video_summary, EmptyTranscriptError, get_video_title, get_video_thumbnail, pytubefix_proxies
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
 from pytubefix import YouTube
@@ -174,12 +174,14 @@ class UtilsTests(TestCase):
         mocked_get.return_value.raw = io.BytesIO(b"thumbnail data")
         mocked_get.return_value.raw.decode_content = False
 
-        thumbnail_path = get_video_thumbnail(youtube_url=self.youtube_urls[0])
+        thumbnail_location = get_video_thumbnail(youtube_url=self.youtube_urls[0])
+        path_to_media_folder = (settings.THUMBNAILS_PATH / f"{self.video_ids[0]}.jpg").resolve().as_posix()
+        expected_thumbnail_location = f"thumbnails/{self.video_ids[0]}.jpg"
 
-        expected_path = (settings.THUMBNAILS_PATH / f"{self.video_ids[0]}.jpg").resolve().as_posix()
-        self.assertEqual(expected_path, thumbnail_path)
-        mocked_open.assert_called_with(expected_path, "wb") # check open was called with the right parameters
-        mocked_get.assert_called_once()
+        self.assertEqual(expected_thumbnail_location, thumbnail_location)
+        mocked_open.assert_called_once_with(path_to_media_folder, "wb")
+        mocked_get.assert_called_once_with(url=mocked_thumbnail_url.return_value, proxies=pytubefix_proxies,
+                                           stream=True)
         mocked_copyfileobj.assert_called_once()
 
     @patch("summarizer_app.utils.shutil.copyfileobj")
@@ -195,10 +197,11 @@ class UtilsTests(TestCase):
         mocked_get.return_value.raw = io.BytesIO(b"") # no thumbnail data
         mocked_get.return_value.raw.decode_content = False
 
-        thumbnail_path = get_video_thumbnail(youtube_url=self.youtube_urls[0])
+        thumbnail_location = get_video_thumbnail(youtube_url=self.youtube_urls[0])
 
-        self.assertIsNone(thumbnail_path) # no thumbnail path
-        mocked_get.assert_called_once()
+        self.assertIsNone(thumbnail_location) # no thumbnail path
+        mocked_get.assert_called_once_with(url=mocked_thumbnail_url.return_value, proxies=pytubefix_proxies,
+                                           stream=True)
         mocked_open.assert_not_called()
         mocked_copyfileobj.assert_not_called()
 
@@ -232,7 +235,7 @@ class UtilsTests(TestCase):
         # verify that the mocked functions were called
         mocked_get_video_id.assert_called_once_with(youtube_url)
         mock_get_video_text.assert_called_once_with(video_id)
-        mock_get_text_summary.assert_called_once()
+        mock_get_text_summary.assert_called_once_with(mock_get_video_text.return_value)
         mocked_get_video_title.assert_called_once_with(youtube_url)
         mocked_get_video_thumbnail.assert_called_once_with(youtube_url)
 
@@ -283,4 +286,3 @@ class PytubeFixTests(TestCase):
             shutil.copyfileobj(req.raw, thumbnail)
 
             self.assertIn(".jpg", thumbnail.name)
-

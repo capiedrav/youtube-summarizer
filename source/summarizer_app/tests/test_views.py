@@ -238,8 +238,13 @@ class VideoSummaryViewTests(TestCase):
     def setUp(self):
 
         self.client = Client()
-        YTSummary.objects.create(video_id="EXWJZ2jEe6I", url="https://www.youtube.com/watch?v=EXWJZ2jEe6I",
-                                 video_text="bla bla", video_summary="ble ble")
+        YTSummary.objects.create(
+            video_id="EXWJZ2jEe6I",
+            url="https://www.youtube.com/watch?v=EXWJZ2jEe6I",
+            title="test title",
+            thumbnail=(settings.THUMBNAILS_PATH / "EXWJZ2jEe6I.jpg").resolve().as_posix(),
+            video_text="bla bla",
+            video_summary="ble ble")
 
     def test_video_summary_url_resolves_to_VideoSummaryView(self):
 
@@ -255,5 +260,7 @@ class VideoSummaryViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/video_summary.html")
+        self.assertContains(response, yt_summary.title)
+        self.assertContains(response, yt_summary.thumbnail.path)
         self.assertContains(response, yt_summary.video_summary[:20])
         self.assertContains(response, yt_summary.video_text[:20])
