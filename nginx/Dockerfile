@@ -4,8 +4,8 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/
 
 # copy static files
-WORKDIR /home/nginx/app/static
-COPY ./static_files .
+WORKDIR /home/nginx/app
+#COPY ./static_files .
 
 # change ownership and permissions (needs root privileges)
 USER root

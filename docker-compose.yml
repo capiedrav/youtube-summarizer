@@ -4,6 +4,7 @@ services:
 
     volumes:
       - db-volume-staging:/app/db
+      - files-volume-staging:/app/nginx
 
     env_file: "./.env-staging"
 
@@ -20,6 +21,10 @@ services:
 
   nginx:
     build: ./nginx
+
+    volumes:
+      # mount this volume as read only
+      - files-volume-staging:/home/nginx/app
 
     depends_on:
       - web
@@ -47,6 +52,7 @@ services:
 
 volumes:
   db-volume-staging:
+  files-volume-staging:
 
 networks:
   yt-summarizer-network:
