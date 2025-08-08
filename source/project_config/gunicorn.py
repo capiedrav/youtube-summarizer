@@ -2,6 +2,8 @@
 
 # Django WSGI application path in pattern MODULE_NAME:VARIABLE_NAME
 wsgi_app = "project_config.wsgi:application"
+# restart workers after 90s of no activity (e.g. waiting for an API response)
+timeout = 90
 # The granularity of Error log outputs
 loglevel = "info"
 # send access logs to stdout
