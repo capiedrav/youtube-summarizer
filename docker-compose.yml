@@ -4,6 +4,7 @@ services:
 
     volumes:
       - db-volume-prod:/app/db
+      # this volume is shared with nginx container
       - files-volume-prod:/app/nginx
     env_file: "./.env"
 
@@ -12,6 +13,11 @@ services:
 
     command: >
       sh -c "python manage.py migrate &&
+             # collect static files (creates STATIC_ROOT path if not already exits)
+             python manage.py collectstatic --no-input &&
+             # create folder for media files if not already exist
+             mkdir -p /app/nginx/media/thumbnails &&
+             # start django app 
              gunicorn -c ./project_config/gunicorn.py"
 
     restart: unless-stopped
@@ -22,8 +28,8 @@ services:
     build: ./nginx
 
     volumes:
-      # mount this volume as read only
-      - files-volume-prod:/home/nginx/app
+      # this volume is shared with django container (read-only)
+      - files-volume-prod:/usr/share/nginx/html:ro
 
     depends_on:
       - web

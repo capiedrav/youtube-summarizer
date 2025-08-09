@@ -138,11 +138,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-STATIC_ROOT = BASE_DIR / "../nginx/static_files"
+STATIC_ROOT = BASE_DIR / "../nginx/static"
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
@@ -150,7 +150,7 @@ STATICFILES_FINDERS = [
 
 # media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "../nginx/media_files"
+MEDIA_ROOT = BASE_DIR / "../nginx/media"
 THUMBNAILS_PATH = MEDIA_ROOT / 'thumbnails' # thumbnails path
 
 # Default primary key field type
