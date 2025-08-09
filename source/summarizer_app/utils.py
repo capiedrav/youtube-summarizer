@@ -1,3 +1,4 @@
+import shutil
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
@@ -6,6 +7,17 @@ from openai import OpenAI
 import os
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
+from pytubefix import YouTube
+import requests
+from django.conf import settings
+
+# concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
+proxy_username = os.getenv("PROXY_USERNAME", default="no_username") + "-rotate"
+proxy_password = os.getenv("PROXY_PASSWORD", default="no_password")
+pytubefix_proxies = {
+    "http": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+    "https": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+}
 
 
 class WrongUrlError(Exception):
@@ -19,7 +31,7 @@ class EmptyTranscriptError(CouldNotRetrieveTranscript):
     )
 
 
-def get_video_id(youtubeUrl:str) -> str:
+def get_video_id(youtube_url:str) -> str:
     """
     Returns the video id of a youtube url. For example, the video id of the following url 
     
@@ -30,21 +42,21 @@ def get_video_id(youtubeUrl:str) -> str:
     5bId3N7QZec
     
     Args:
-        youtubeUrl (string): youtube url
+        youtube_url (string): youtube url
 
     Returns:
         video_id (string): video id
 
     """
     
-    split_url = youtubeUrl.split("v=")
+    split_url = youtube_url.split("v=")
     
     if len(split_url) == 2:
         video_id = split_url[1]
         if video_id:
             return video_id
 
-    raise WrongUrlError(f"{youtubeUrl} is not a valid youtube url")    
+    raise WrongUrlError(f"{youtube_url} is not a valid youtube url")
 
 def get_video_text(video_id: str) -> str:
 
@@ -104,10 +116,35 @@ def get_text_summary(text: str) -> str:
     # return the api response
     return response.choices[0].message.content
 
-def get_video_summary(video_id: str) -> tuple[str, str]:
+def get_video_title(youtube_url: str) -> str:
 
+    return YouTube(url=youtube_url, proxies=pytubefix_proxies).title
+
+def get_video_thumbnail(youtube_url: str) -> str | None:
+
+    thumbnail_url = YouTube(url=youtube_url, proxies=pytubefix_proxies).thumbnail_url
+    response = requests.get(url=thumbnail_url, proxies=pytubefix_proxies, stream=True)
+
+    if response.status_code == 200:
+        video_id = get_video_id(youtube_url)
+        # absolute path to where the thumbnail is stored
+        thumbnail_path = (settings.THUMBNAILS_PATH / f"{video_id}.jpg").resolve().as_posix()
+        with open(thumbnail_path, "wb") as file: # save thumbnail
+            response.raw.decode_content = True
+            shutil.copyfileobj(response.raw, file)
+
+        return f"thumbnails/{video_id}.jpg" # path relative to settings.MEDIA_ROOT
+
+    return None
+
+
+def get_video_summary(youtube_url: str) -> tuple[str, str,str, str | None]:
+
+    video_id = get_video_id(youtube_url)
     video_text = get_video_text(video_id)
     video_summary = get_text_summary(video_text)
+    video_title = get_video_title(youtube_url)
+    video_thumbnail = get_video_thumbnail(youtube_url)
 
-    return video_summary, video_text
+    return video_summary, video_text, video_title, video_thumbnail
     

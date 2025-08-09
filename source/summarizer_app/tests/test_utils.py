@@ -1,15 +1,17 @@
+import io
 import os
 import shutil
 from random import choice
 from unittest import skipIf
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 from django.conf import settings
 from django.test import TestCase
+from requests import Response
 from youtube_transcript_api import RequestBlocked, FetchedTranscript, FetchedTranscriptSnippet
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import WebshareProxyConfig
 from summarizer_app.utils import get_video_id, WrongUrlError, get_video_text, get_text_summary, \
-    get_video_summary, EmptyTranscriptError
+    get_video_summary, EmptyTranscriptError, get_video_title, get_video_thumbnail, pytubefix_proxies
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
 from pytubefix import YouTube
@@ -150,11 +152,71 @@ class UtilsTests(TestCase):
 
         self.assertIsInstance(text_summary, str)
 
+    @patch("summarizer_app.utils.YouTube.title", new_callable=PropertyMock)
+    def test_get_video_title(self, mocked_title):
+
+        mocked_title.return_value = "Youtube Video Title"
+
+        title = get_video_title(youtube_url=self.youtube_urls[0])
+
+        self.assertEqual(title, mocked_title.return_value)
+        mocked_title.assert_called_once()
+
+    @patch("summarizer_app.utils.shutil.copyfileobj")
+    @patch("summarizer_app.utils.open")
+    @patch("summarizer_app.utils.requests.get")
+    @patch("summarizer_app.utils.YouTube.thumbnail_url", new_callable=PropertyMock)
+    def test_get_video_thumbnail(self, mocked_thumbnail_url, mocked_get, mocked_open, mocked_copyfileobj):
+
+        mocked_thumbnail_url.return_value = "www.youtube-video-thumbnail.com"
+        mocked_get.return_value = Response()
+        mocked_get.return_value.status_code = 200
+        mocked_get.return_value.raw = io.BytesIO(b"thumbnail data")
+        mocked_get.return_value.raw.decode_content = False
+
+        thumbnail_location = get_video_thumbnail(youtube_url=self.youtube_urls[0])
+        path_to_media_folder = (settings.THUMBNAILS_PATH / f"{self.video_ids[0]}.jpg").resolve().as_posix()
+        expected_thumbnail_location = f"thumbnails/{self.video_ids[0]}.jpg"
+
+        self.assertEqual(expected_thumbnail_location, thumbnail_location)
+        mocked_open.assert_called_once_with(path_to_media_folder, "wb")
+        mocked_get.assert_called_once_with(url=mocked_thumbnail_url.return_value, proxies=pytubefix_proxies,
+                                           stream=True)
+        mocked_copyfileobj.assert_called_once()
+
+    @patch("summarizer_app.utils.shutil.copyfileobj")
+    @patch("summarizer_app.utils.open")
+    @patch("summarizer_app.utils.requests.get")
+    @patch("summarizer_app.utils.YouTube.thumbnail_url", new_callable=PropertyMock)
+    def test_cant_get_video_thumbnail_on_wrong_response(self, mocked_thumbnail_url, mocked_get, mocked_open,
+                                                        mocked_copyfileobj):
+
+        mocked_thumbnail_url.return_value = "www.youtube-video-thumbnail.com"
+        mocked_get.return_value = Response()
+        mocked_get.return_value.status_code = 404 # wrong status code
+        mocked_get.return_value.raw = io.BytesIO(b"") # no thumbnail data
+        mocked_get.return_value.raw.decode_content = False
+
+        thumbnail_location = get_video_thumbnail(youtube_url=self.youtube_urls[0])
+
+        self.assertIsNone(thumbnail_location) # no thumbnail path
+        mocked_get.assert_called_once_with(url=mocked_thumbnail_url.return_value, proxies=pytubefix_proxies,
+                                           stream=True)
+        mocked_open.assert_not_called()
+        mocked_copyfileobj.assert_not_called()
+
+    @patch("summarizer_app.utils.get_video_thumbnail")
+    @patch("summarizer_app.utils.get_video_title")
     @patch("summarizer_app.utils.get_text_summary")
     @patch("summarizer_app.utils.get_video_text")
-    def test_get_video_summary(self, mock_get_video_text, mock_get_text_summary):
+    @patch("summarizer_app.utils.get_video_id")
+    def test_get_video_summary(self, mocked_get_video_id, mock_get_video_text, mock_get_text_summary,
+                               mocked_get_video_title, mocked_get_video_thumbnail):
 
+        youtube_url = self.youtube_urls[0]
         video_id = self.video_ids[0]
+
+        mocked_get_video_id.return_value = video_id
 
         # mock get_video_text function
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
@@ -164,17 +226,30 @@ class UtilsTests(TestCase):
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as text_summary:
             mock_get_text_summary.return_value = text_summary.read()
 
+        mocked_get_video_title.return_value = "video title"
+        mocked_get_video_thumbnail.return_value = "thumbnail path"
+
         # call the function under test
-        video_summary, video_text = get_video_summary(video_id)
+        video_summary, video_text, video_title, video_thumbnail = get_video_summary(youtube_url)
 
         # verify that the mocked functions were called
-        mock_get_video_text.assert_called_once()
-        mock_get_text_summary.assert_called_once()
+        mocked_get_video_id.assert_called_once_with(youtube_url)
+        mock_get_video_text.assert_called_once_with(video_id)
+        mock_get_text_summary.assert_called_once_with(mock_get_video_text.return_value)
+        mocked_get_video_title.assert_called_once_with(youtube_url)
+        mocked_get_video_thumbnail.assert_called_once_with(youtube_url)
 
-        self.assertIsInstance(video_summary, str)
-        self.assertIsInstance(video_text, str)
+        # verify the get_video_summary returns the correct information
+        self.assertEqual(video_summary, mock_get_text_summary.return_value)
+        self.assertEqual(video_text, mock_get_video_text.return_value)
+        self.assertEqual(video_title, mocked_get_video_title.return_value)
+        self.assertEqual(video_thumbnail, mocked_get_video_thumbnail.return_value)
 
 
+@skipIf(
+    condition=os.getenv("TEST_PYTUBEFIX_API") is None,
+    reason="These tests are time and money consuming, because they use a paid proxy."
+)
 class PytubeFixTests(TestCase):
     """
     Tests for pytubefix module.
@@ -211,4 +286,3 @@ class PytubeFixTests(TestCase):
             shutil.copyfileobj(req.raw, thumbnail)
 
             self.assertIn(".jpg", thumbnail.name)
-

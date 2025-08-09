@@ -148,6 +148,11 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
+# media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / "../nginx/media_files"
+THUMBNAILS_PATH = MEDIA_ROOT / 'thumbnails' # thumbnails path
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
