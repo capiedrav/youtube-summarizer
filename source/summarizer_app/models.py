@@ -13,6 +13,12 @@ class YTSummary(models.Model):
     video_summary = models.TextField(default=None, null=False)    
     created_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name_plural = "YTSummaries"
+
+    def __str__(self):
+        return self.title
+
     def save(self, force_insert = ..., force_update = ..., using = ..., update_fields = ...,):
         """
         Override this method to make sure url field is valid before saving.
