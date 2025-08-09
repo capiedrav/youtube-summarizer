@@ -15,11 +15,11 @@ RUN adduser --disabled-password --no-create-home app-user
 # copy source code
 COPY ./source ./source
 
-# create folder for prod database
-RUN mkdir -p ./db
+# create folder for prod database and static and media files
+RUN mkdir -p ./db ./nginx/static_files ./nginx/media_files/thumbnails
 
 # change ownership and permissions of the files
-RUN chown -R app-user:users . && chmod 700 -R .
+RUN chown -R app-user:users . && chmod 704 -R .
 
 # move to source directory
 WORKDIR /app/source

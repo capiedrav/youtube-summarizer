@@ -4,7 +4,7 @@ services:
 
     volumes:
       - db-volume-prod:/app/db
-
+      - files-volume-prod:/app/nginx
     env_file: "./.env"
 
     networks:
@@ -20,6 +20,10 @@ services:
 
   nginx:
     build: ./nginx
+
+    volumes:
+      # mount this volume as read only
+      - files-volume-prod:/home/nginx/app
 
     depends_on:
       - web
@@ -47,6 +51,7 @@ services:
 
 volumes:
   db-volume-prod:
+  files-volume-prod:
 
 networks:
   yt-summarizer-network:
