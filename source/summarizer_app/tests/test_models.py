@@ -37,16 +37,42 @@ class YTSummaryModelTests(TestCase):
         YTSummary.objects.create(
             video_id=self.video_ids[0],
             url=self.youtube_urls[0],
+            title="video title",
+            thumbnail="thumbnails/thumbnail.jpg",
             video_text=self.video_text,
             video_summary=self.video_summary)
 
         self.assertEqual(YTSummary.objects.count(), 1)
+
+        # check thumbnails are saved at expected location
+        expected_path = (settings.THUMBNAILS_PATH / "thumbnail.jpg").resolve() # normalize path
+        self.assertEqual(expected_path.as_posix(), YTSummary.objects.first().thumbnail.path)
+
+    def test_create_YTSummary_with_default_title_and_thumbnail(self):
+        YTSummary.objects.create(
+            # note that title and thumbnail fields are not defined
+            video_id=self.video_ids[0],
+            url=self.youtube_urls[0],
+            video_text=self.video_text,
+            video_summary=self.video_summary)
+
+        self.assertEqual(YTSummary.objects.count(), 1)
+
+        # check default title was saved
+        yt_summary = YTSummary.objects.first()
+        self.assertEqual(yt_summary.title, "Title Not Available")
+
+        # check default thumbnail was saved
+        expected_path = (settings.THUMBNAILS_PATH / "thumbnail_not_found.jpg").resolve() # normalize path
+        self.assertEqual(expected_path.as_posix(), yt_summary.thumbnail.path)
 
     def test_cant_create_YTSummary_with_wrong_url(self):
 
         yt_summary = YTSummary(
             video_id=self.video_ids[0],
             url="www.google.com", # wrong url
+            title="video title",
+            thumbnail="thumbnails/thumbnail.jpg",
             video_text=self.video_text,
             video_summary=self.video_summary
         )
@@ -56,6 +82,7 @@ class YTSummaryModelTests(TestCase):
         self.assertEqual(YTSummary.objects.count(), 0)
 
     def test_cant_save_YTSummary_instance_with_incomplete_fields(self):
+        # note that title and thumbnail fields are not defined because they have default values
 
         with self.assertRaises(ValidationError):
             with transaction.atomic(): # for the reason to use this check: https://stackoverflow.com/questions/21458387/transactionmanagementerror-you-cant-execute-queries-until-the-end-of-the-atom
