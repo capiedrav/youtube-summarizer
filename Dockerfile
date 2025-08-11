@@ -20,7 +20,7 @@ RUN mkdir -p ./db ./nginx
 
 
 # change ownership and permissions of the files
-RUN chown -R app-user:users . && chmod 705 -R .
+RUN chown -R app-user:users . && chmod 755 -R .
 
 # move to source directory
 WORKDIR /app/source

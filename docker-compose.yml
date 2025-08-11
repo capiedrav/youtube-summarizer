@@ -13,6 +13,8 @@ services:
 
     command: >
       sh -c "python manage.py migrate &&
+             # remove default nginx html files
+             rm -f /app/nginx/*.html &&
              # collect static files (creates STATIC_ROOT path if not already exits)
              python manage.py collectstatic --no-input &&
              # create folder for media files if not already exist
