@@ -60,7 +60,7 @@ class YTSummaryModelTests(TestCase):
 
         # check default title was saved
         yt_summary = YTSummary.objects.first()
-        self.assertEqual(yt_summary.title, "N/A")
+        self.assertEqual(yt_summary.title, "Title Not Available")
 
         # check default thumbnail was saved
         expected_path = (settings.THUMBNAILS_PATH / "thumbnail_not_found.jpg").resolve() # normalize path
