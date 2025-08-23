@@ -1,3 +1,6 @@
+aiohappyeyeballs==2.6.1
+aiohttp==3.12.15
+aiosignal==1.4.0
 annotated-types==0.7.0
 anyio==4.8.0
 argon2-cffi==21.3.0
@@ -32,6 +35,7 @@ django-recaptcha==4.1.0
 executing==2.2.0
 fastjsonschema==2.20.0
 fqdn==1.5.1
+frozenlist==1.7.0
 gunicorn==23.0.0
 h11==0.14.0
 httpcore==1.0.7
@@ -67,6 +71,7 @@ lxml==5.3.1
 MarkupSafe==3.0.2
 matplotlib-inline==0.1.6
 mistune==3.1.2
+multidict==6.6.4
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -84,6 +89,7 @@ pip==25.0
 platformdirs==4.3.8
 prometheus_client==0.21.1
 prompt-toolkit==3.0.43
+propcache==0.3.2
 psutil==7.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -100,7 +106,7 @@ PySocks==1.7.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 python-json-logger==3.3.0
-pytubefix==9.3.0
+pytubefix==9.4.1
 PyYAML==6.0.2
 pyzmq==27.0.0
 qtconsole==5.6.1
@@ -136,5 +142,6 @@ webencodings==0.5.1
 websocket-client==1.8.0
 wheel==0.45.1
 widgetsnbextension==4.0.13
+yarl==1.20.1
 youtube-transcript-api==1.1.0
 zope.interface==7.2
