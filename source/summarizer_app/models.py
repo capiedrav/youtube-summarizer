@@ -11,7 +11,7 @@ class YTSummary(models.Model):
                                                                                             # MEDIA_ROOT in settings.py
     video_text = models.TextField(default=None, null=False)
     video_summary = models.TextField(default=None, null=False)    
-    created_on = models.DateTimeField(auto_now=True)
+    created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name_plural = "YTSummaries"
