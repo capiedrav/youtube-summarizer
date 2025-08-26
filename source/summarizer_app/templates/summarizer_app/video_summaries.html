@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="row mb-3">
+    <div class="col text-center">
+      <h1 class="display-1">Video Summaries</h1>
+    </div>
+  </div>
+	{% for yt_summary in yt_summaries %}
+    <div class="row my-2">
+      <div class="col-md-4">
+        <img class="mw-100 shadow rounded-3" src="{{ yt_summary.thumbnail.url }}" alt="{{ yt_summary.title }}">
+      </div>
+      <div class="col-md-8">
+        <h2>{{ yt_summary.title }}</h2>
+        <a class="link-danger link-underline-opacity-0" href="{{ yt_summary.url }}" target="_blank" rel="noopener noreferrer"><p class="fs-4">{{ yt_summary.url }}</p></a>
+      </div>
+    </div>
+	{% endfor %}
+
+{% endblock %}

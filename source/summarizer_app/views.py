@@ -1,4 +1,4 @@
-from django.views.generic import DetailView
+from django.views.generic import DetailView, ListView
 from django.views.generic.edit import FormView
 from django.shortcuts import redirect, reverse
 from .models import YTSummary
@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 class UrlView(FormView):
+    """
+    View for rendering home page and handling form submission.
+    """
 
     template_name = "summarizer_app/home.html"
     form_class = YoutubeUrlForm
@@ -47,11 +50,24 @@ class UrlView(FormView):
 
         context["video_summary"] = yt_summary.video_summary
 
-        return redirect(reverse("video_summary", kwargs={"pk": video_id}))
+        return redirect(reverse("video-summary", kwargs={"pk": video_id}))
     
 
 class VideoSummaryView(DetailView):
+    """
+    View for rendering video summary.
+    """
 
     model = YTSummary
     template_name = "summarizer_app/video_summary.html"
     context_object_name = "yt_summary"
+
+
+class VideoSummaryListView(ListView):
+    """
+    View for rendering list of video summaries.
+    """
+
+    model = YTSummary
+    template_name = "summarizer_app/video_summaries.html"
+    context_object_name = "yt_summaries"
