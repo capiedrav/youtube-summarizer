@@ -71,3 +71,4 @@ class VideoSummaryListView(ListView):
     model = YTSummary
     template_name = "summarizer_app/video_summaries.html"
     context_object_name = "yt_summaries"
+    queryset = YTSummary.objects.order_by("-created_on") # summaries ordered from most recent backwards

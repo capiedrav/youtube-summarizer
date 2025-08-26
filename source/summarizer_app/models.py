@@ -1,5 +1,6 @@
 from django.db import models
 from .forms import youtube_url_validator
+from django.urls import reverse
 
 
 class YTSummary(models.Model):
@@ -18,6 +19,9 @@ class YTSummary(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse(viewname="video-summary", kwargs={"pk": self.video_id})
 
     def save(self, force_insert = ..., force_update = ..., using = ..., update_fields = ...,):
         """
