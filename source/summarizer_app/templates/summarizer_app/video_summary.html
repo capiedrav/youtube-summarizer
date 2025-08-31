@@ -2,13 +2,14 @@
 {% load static %}
 
 {% block content %}
-  <div class="row my-2">
+  <div class="row mt-2">
     <div class="col-md-5">
       <img class="mw-100 shadow rounded-3" src="{{ yt_summary.thumbnail.url }}" alt="{{ yt_summary.title }} thumbnail">
     </div>
     <div class="col-md-7 d-flex flex-column justify-content-center text-center text-md-start">
       <h2 class="display-5">{{ yt_summary.title }}</h2>
-      <a class="link-danger link-underline-opacity-0" href="{{ yt_summary.url }}" target="_blank" rel="noopener noreferrer"><p class="fs-4">{{ yt_summary.url }}</p></a>
+      <span class="badge rounded-pill my-2 text-bg-info align-self-center align-self-md-start">{{ yt_summary.created_on }}</span>
+      <a class="link-danger link-underline-opacity-0" href="{{ yt_summary.url }}" target="_blank" rel="noopener noreferrer"><p class="fs-5">{{ yt_summary.url }}</p></a>
     </div>
   </div>
   <div class="row my-2">
@@ -17,7 +18,7 @@
       <p>{{ yt_summary.video_text }}</p>
     </div>
     <div class="col-md">
-      <h2 class="display-4 my-2 text-center">Video Summary</h2>
+      <h2 class="display-5 my-2 text-center">Video Summary</h2>
       <p>{{ yt_summary.video_summary }}</p>
     </div>
   </div>

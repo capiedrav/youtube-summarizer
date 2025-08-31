@@ -14,7 +14,7 @@
       <div class="col-md-8">
         <a class="link-dark link-underline-opacity-0 link-underline-opacity-75-hover" href={{ yt_summary.get_absolute_url }}><h2>{{ yt_summary.title }}</h2></a>
         <span class="badge rounded-pill text-bg-info">{{ yt_summary.created_on }}</span>
-        <a class="link-danger link-underline-opacity-0 link-underline-opacity-75-hover" href="{{ yt_summary.url }}" target="_blank" rel="noopener noreferrer"><p class="fs-4">{{ yt_summary.url }}</p></a>
+        <a class="link-danger link-underline-opacity-0 link-underline-opacity-75-hover" href="{{ yt_summary.url }}" target="_blank" rel="noopener noreferrer"><p class="fs-5">{{ yt_summary.url }}</p></a>
         <p>{{ yt_summary.video_summary | truncatewords:30 }}</p> {# truncate text after 30 words #}
       </div>
     </div>
