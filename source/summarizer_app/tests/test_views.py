@@ -5,7 +5,7 @@ from django.urls import resolve, reverse
 from summarizer_app.forms import YoutubeUrlForm
 from summarizer_app.models import YTSummary
 from summarizer_app.utils import EmptyTranscriptError, RequestBlocked
-from summarizer_app.views import UrlView, VideoSummaryView
+from summarizer_app.views import UrlView, VideoSummaryView, VideoSummaryListView
 from .test_forms import custom_recaptcha_response
 
 
@@ -248,13 +248,13 @@ class VideoSummaryViewTests(TestCase):
 
     def test_video_summary_url_resolves_to_VideoSummaryView(self):
 
-        view = resolve(reverse("video_summary", kwargs={"pk": "EXWJZ2jEe6I"}))
+        view = resolve(reverse("video-summary", kwargs={"pk": "EXWJZ2jEe6I"}))
 
         self.assertEqual(view.func.view_class, VideoSummaryView)
 
     def test_VideoSummaryView_renders_video_summary_video_text(self):
 
-        response = self.client.get(reverse("video_summary", kwargs={"pk": "EXWJZ2jEe6I"}))
+        response = self.client.get(reverse("video-summary", kwargs={"pk": "EXWJZ2jEe6I"}))
 
         yt_summary = YTSummary.objects.get(pk="EXWJZ2jEe6I")
 
@@ -264,3 +264,49 @@ class VideoSummaryViewTests(TestCase):
         self.assertContains(response, yt_summary.thumbnail.path)
         self.assertContains(response, yt_summary.video_summary[:20])
         self.assertContains(response, yt_summary.video_text[:20])
+
+
+class VideoSummaryListViewTests(TestCase):
+    """
+    Tests for the VideoSummariesListView class.
+    """
+
+    def setUp(self):
+
+        self.client = Client()
+        summaries = []
+        for i in range(1, 11): # create 10 database entries
+            summaries.append(YTSummary(
+                video_id=f"video_{i}",
+                url=f"https://www.youtube.com/watch?v=video_{i}",
+                title=f"video {i}",
+                thumbnail=f"thumbnails/thumbnail_{i}.jpg",
+                video_text=f"transcript video {i}",
+                video_summary=f"summary video {i}"
+                )
+            )
+        YTSummary.objects.bulk_create(summaries) # save database entries with a single query
+
+    def test_video_summaries_url_resolves_to_VideoSummariesListView(self):
+
+        view = resolve(reverse("video-summary-list"))
+
+        self.assertEqual(view.func.view_class, VideoSummaryListView)
+
+    def test_VideoSummaryListView_renders_video_summary_list(self):
+
+        response = self.client.get(reverse("video-summary-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "summarizer_app/video_summaries.html")
+        self.assertEqual(YTSummary.objects.count(), 10)
+
+        # get the first and last video summaries in the database
+        yt_1 = YTSummary.objects.get(pk="video_1")
+        yt_10 = YTSummary.objects.get(pk="video_10")
+
+        # check they're rendered in the template
+        self.assertContains(response, yt_1.title)
+        self.assertContains(response, yt_1.thumbnail.url)
+        self.assertContains(response, yt_10.title)
+        self.assertContains(response, yt_10.thumbnail.url)
