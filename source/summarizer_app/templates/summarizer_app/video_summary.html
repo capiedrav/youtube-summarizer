@@ -14,12 +14,13 @@
     </div>
   </div>
   <div class="row my-2">
-    <div class="col-md">
-      <h2 class="display-5 my-2 text-center">Video Transcript</h2>
+    {# order class (from flex utility) enables reordering these columns responsively #}
+    <div class="col-md order-2 order-md-1">
+      <h2 class="my-2 text-center">Video Transcript</h2>
       <p>{{ yt_summary.video_text }}</p>
     </div>
-    <div class="col-md">
-      <h2 class="display-5 my-2 text-center">Video Summary</h2>
+    <div class="col-md order-1 order-md-2">
+      <h2 class="my-2 text-center">Video Summary</h2>
       <h4>Overview</h4>
       <p>{{ video_summary.overview }}</p>
       <h4>Key Takeaways</h4>
