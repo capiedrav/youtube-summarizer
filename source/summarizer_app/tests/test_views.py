@@ -7,6 +7,7 @@ from summarizer_app.models import YTSummary
 from summarizer_app.utils import EmptyTranscriptError, RequestBlocked
 from summarizer_app.views import UrlView, VideoSummaryView, VideoSummaryListView
 from .test_forms import custom_recaptcha_response
+import json
 
 
 class UrlViewTests(TestCase):
@@ -151,7 +152,18 @@ class UrlViewTests(TestCase):
             video_id="EXWJZ2jEe6I",
             url=self.payload["url"],
             video_text="bla bla",
-            video_summary="bla bla"
+            video_summary="""
+            {
+                "overview": "video overview",
+                "key_takeaways": [
+                    "takeaway_1",
+                    "takeaway_2",
+                    "takeaway_3",
+                    "takeaway_4"
+                ],
+                "conclusion": "conclusion"
+            }
+            """
         )
 
         self.config_mocks(mock_get_video_id, mock_get_video_summary, mocked_submit)
@@ -244,7 +256,18 @@ class VideoSummaryViewTests(TestCase):
             title="test title",
             thumbnail=(settings.THUMBNAILS_PATH / "EXWJZ2jEe6I.jpg").resolve().as_posix(),
             video_text="bla bla",
-            video_summary="ble ble")
+            video_summary="""
+            {
+                "overview": "video overview",
+                "key_takeaways": [
+                    "takeaway_1",
+                    "takeaway_2",
+                    "takeaway_3",
+                    "takeaway_4"
+                ],
+                "conclusion": "conclusion"
+            }
+            """)
 
     def test_video_summary_url_resolves_to_VideoSummaryView(self):
 
@@ -257,12 +280,15 @@ class VideoSummaryViewTests(TestCase):
         response = self.client.get(reverse("video-summary", kwargs={"pk": "EXWJZ2jEe6I"}))
 
         yt_summary = YTSummary.objects.get(pk="EXWJZ2jEe6I")
+        video_summary = response.context["video_summary"]
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/video_summary.html")
         self.assertContains(response, yt_summary.title)
         self.assertContains(response, yt_summary.thumbnail.path)
-        self.assertContains(response, yt_summary.video_summary[:20])
+        self.assertContains(response, video_summary["overview"][:20])
+        self.assertContains(response, video_summary["key_takeaways"][0][:20])
+        self.assertContains(response, video_summary["conclusion"][:20])
         self.assertContains(response, yt_summary.video_text[:20])
 
 
@@ -282,7 +308,18 @@ class VideoSummaryListViewTests(TestCase):
                 title=f"video {i}",
                 thumbnail=f"thumbnails/thumbnail_{i}.jpg",
                 video_text=f"transcript video {i}",
-                video_summary=f"summary video {i}"
+                video_summary="""
+            {
+                "overview": "video overview",
+                "key_takeaways": [
+                    "takeaway_1",
+                    "takeaway_2",
+                    "takeaway_3",
+                    "takeaway_4"
+                ],
+                "conclusion": "conclusion"
+            }
+            """
                 )
             )
         YTSummary.objects.bulk_create(summaries) # save database entries with a single query
@@ -308,5 +345,7 @@ class VideoSummaryListViewTests(TestCase):
         # check they're rendered in the template
         self.assertContains(response, yt_1.title)
         self.assertContains(response, yt_1.thumbnail.url)
+        self.assertContains(response, json.loads(yt_1.video_summary)["overview"])
         self.assertContains(response, yt_10.title)
         self.assertContains(response, yt_10.thumbnail.url)
+        self.assertContains(response, json.loads(yt_10.video_summary)["overview"])

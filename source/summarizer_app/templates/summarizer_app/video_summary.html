@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{#{% load markdownify %}#}
 
 {% block content %}
   <div class="row mt-2">
@@ -19,7 +20,16 @@
     </div>
     <div class="col-md">
       <h2 class="display-5 my-2 text-center">Video Summary</h2>
-      <p>{{ yt_summary.video_summary }}</p>
+      <h4>Overview</h4>
+      <p>{{ video_summary.overview }}</p>
+      <h4>Key Takeaways</h4>
+      <ul>
+        {% for takeaway in video_summary.key_takeaways %}
+          <li>{{ takeaway }}</li>
+        {% endfor %}
+      </ul>
+      <h4>Conclusion</h4>
+      <p>{{ video_summary.conclusion }}</p>
     </div>
   </div>
 {% endblock %}

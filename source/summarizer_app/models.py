@@ -11,7 +11,7 @@ class YTSummary(models.Model):
     thumbnail = models.ImageField(default="thumbnails/thumbnail_not_found.jpg", null=False) # this path is relative to
                                                                                             # MEDIA_ROOT in settings.py
     video_text = models.TextField(default=None, null=False)
-    video_summary = models.TextField(default=None, null=False)    
+    video_summary = models.TextField(default=None, null=False) # the summaries are stored as json strings
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
