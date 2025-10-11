@@ -2,10 +2,10 @@ from django.views.generic import DetailView, ListView
 from django.views.generic.edit import FormView
 from django.shortcuts import redirect, reverse
 from .models import YTSummary
-from .utils import get_video_id, get_video_summary, EmptyTranscriptError
+from .utils import get_video_id, get_video_summary
 from .forms import YoutubeUrlForm
-from youtube_transcript_api._errors import RequestBlocked
 import logging
+import json
 
 
 logger = logging.getLogger(__name__)
@@ -48,8 +48,6 @@ class UrlView(FormView):
                 yt_summary.thumbnail = thumbnail
                 yt_summary.save()
 
-        context["video_summary"] = yt_summary.video_summary
-
         return redirect(reverse("video-summary", kwargs={"pk": video_id}))
     
 
@@ -62,6 +60,12 @@ class VideoSummaryView(DetailView):
     template_name = "summarizer_app/video_summary.html"
     context_object_name = "yt_summary"
 
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+        context["video_summary"] = json.loads(self.object.video_summary) # video summary as a dict
+
+        return context
 
 class VideoSummaryListView(ListView):
     """

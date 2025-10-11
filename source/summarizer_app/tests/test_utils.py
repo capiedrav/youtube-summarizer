@@ -17,6 +17,7 @@ from xml.parsers.expat import ExpatError
 from pytubefix import YouTube
 from tempfile import NamedTemporaryFile
 import requests
+import json
 
 
 class UtilsTests(TestCase):
@@ -145,13 +146,27 @@ class UtilsTests(TestCase):
      )
     def test_get_text_summary(self):
 
+        # types of the values of the dict
+        expected_value_types = {"overview": str, "key_takeaways": list, "conclusion": str}
+
         with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as video_text:
             text = video_text.read()
 
-        text_summary = get_text_summary(text)
+        text_summary = get_text_summary(text) # summary as json string
+        summary_dict = json.loads(text_summary) # summary as dict
 
-        print(text_summary)
-        self.assertIsInstance(text_summary, str)
+        # check the dict has the correct number of key-value pairs
+        keys = list(summary_dict.keys())
+        self.assertEqual(len(keys), len(expected_value_types))
+
+        # check the dict has the correct key names
+        for key in expected_value_types:
+            self.assertIn(key, keys)
+
+        # check the dict values have the correct type
+        for key in expected_value_types:
+            self.assertIsInstance(summary_dict[key], expected_value_types[key])
+
 
     @patch("summarizer_app.utils.YouTube.title", new_callable=PropertyMock)
     def test_get_video_title(self, mocked_title):
