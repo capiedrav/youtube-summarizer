@@ -3,7 +3,11 @@ from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
 from youtube_transcript_api._errors import RequestBlocked, CouldNotRetrieveTranscript
-from openai import OpenAI
+from langchain_deepseek import ChatDeepSeek
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+import json
+from pydantic import BaseModel, Field
 import os
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
@@ -90,31 +94,42 @@ def get_video_text(video_id: str) -> str:
         
     return video_text
 
-def get_text_summary(text: str) -> str:
-    
-    # setup deepseek client using openai sdk
-    deepseek_client = OpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
 
-    messages = [        
-        {
-            "role": "system",
-            "content": "You are an experienced editor that can summarize text very well."
-        },
-        {
-            "role": "user",
-            "content": f"{text}\n\nPlease summarize the key information of video transcript."
-        }        
-    ]
+class Summary(BaseModel):
+    """
+    This is the template for the JSON object expected from the llm.
+    """
 
-    # call deepseek api passing the messages prompt
-    response = deepseek_client.chat.completions.create(
-        model="deepseek-chat",
-        messages=messages,
-        stream=False
+    overview: str = Field(description="A high-level overview of the main topic and key points discussed.")
+    key_takeaways: list[str] = Field(description="A list of the most important insights, facts, or steps.")
+    conclusion: str = Field(
+        description="A concise wrap-up of the video's overall message or next steps (if any), highlighting the \
+                     core value or outcome."
     )
 
-    # return the api response
-    return response.choices[0].message.content
+def get_text_summary(text: str) -> str:
+
+    json_parser = JsonOutputParser(pydantic_object=Summary)
+    prompt = PromptTemplate.from_template(
+        template="""
+            Summarize the following video transcript clearly and concisely.
+
+            {parser_instructions}
+
+            Be concise but informative. Preserve the original intent and tone of the speaker.
+            Don't include filler or irrelevant content.
+
+            Transcript: {transcript}
+        """
+    )
+
+    llm = ChatDeepSeek(model="deepseek-chat", temperature=0.1)
+    summarizer = prompt | llm | json_parser
+    response = summarizer.invoke(
+        input={"parser_instructions": json_parser.get_format_instructions(), "transcript": text}
+    )
+
+    return json.dumps(response) # response as a json string
 
 def get_video_title(youtube_url: str) -> str:
 
