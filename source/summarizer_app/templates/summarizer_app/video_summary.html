@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{#{% load markdownify %}#}
 
 {% block content %}
   <div class="row mt-2">
@@ -13,13 +14,40 @@
     </div>
   </div>
   <div class="row my-2">
-    <div class="col-md">
-      <h2 class="display-5 my-2 text-center">Video Transcript</h2>
-      <p>{{ yt_summary.video_text }}</p>
+    {# order class (from flex utility) enables reordering these columns responsively #}
+    <div class="col-12 col-md-6 order-2 order-md-1">
+      <h2 class="my-2 text-center">Video Transcript</h2>
+      <p class="text-truncate" id="transcript">{{ yt_summary.video_text }}</p>
+      <button class="btn btn-outline-primary" id="transcript-button" type="button">Show more</button>
     </div>
-    <div class="col-md">
-      <h2 class="display-5 my-2 text-center">Video Summary</h2>
-      <p>{{ yt_summary.video_summary }}</p>
+    <div class="col-12 col-md-6 order-1 order-md-2">
+      <h2 class="my-2 text-center">Video Summary</h2>
+      <h4>Overview</h4>
+      <p>{{ video_summary.overview }}</p>
+      <h4>Key Takeaways</h4>
+      <ul>
+        {% for takeaway in video_summary.key_takeaways %}
+          <li>{{ takeaway }}</li>
+        {% endfor %}
+      </ul>
+      <h4>Conclusion</h4>
+      <p>{{ video_summary.conclusion }}</p>
     </div>
   </div>
+{% endblock %}
+{% block js_script %}
+  <script>
+    transcript = document.querySelector("#transcript");
+    expandButton = document.querySelector("#transcript-button");
+    expandButton.addEventListener("click", ()=>{
+        // on each button click show more or less of the text transcript
+
+        transcript.classList.toggle("text-truncate");
+
+        if (expandButton.innerText === "Show more")
+            expandButton.innerText = "Show less";
+        else
+            expandButton.innerText = "Show more";
+    });
+  </script>
 {% endblock %}
