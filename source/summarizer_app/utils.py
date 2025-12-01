@@ -1,6 +1,7 @@
 import shutil
+from typing import Callable, Any
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
-from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
+from youtube_transcript_api.proxies import WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.prompts import PromptTemplate
@@ -51,6 +52,26 @@ def get_video_id(youtube_url:str) -> str:
 
     raise WrongUrlError(f"{youtube_url} is not a valid youtube url")
 
+def _try_three_times(function: Callable, **kwargs) -> Any:
+    """
+    Tries to execute 'function' three times if the function fails for any reason.
+    After the three failed attempts, this function raise the error.
+    Args:
+        function (Callable): function to be executed.
+        **kwargs: arguments to be passed to the function.
+
+    Returns (Any): the result of calling 'function'.
+    """
+
+    for i in range(3):
+        try:
+            return function(**kwargs)
+        except Exception as error:
+            if i == 2:
+                raise error
+
+    return None
+
 def get_video_text(video_id: str) -> str:
 
     ytt_api = YTA( # config youtube-transcript-api using Webshare proxy credentials
@@ -60,15 +81,7 @@ def get_video_text(video_id: str) -> str:
         )
     )
 
-    # try three times to get the video transcript if the request fails for any reason
-    for i in range(3):
-        try:
-            video_transcript = ytt_api.fetch(video_id=video_id)
-        except Exception as error:
-            if i == 2:
-                raise error
-        else:
-            break
+    video_transcript = _try_three_times(ytt_api.fetch, video_id=video_id) # get video transcript
 
     # format transcript as text
     text_formater = TextFormatter()
@@ -113,14 +126,22 @@ def get_text_summary(text: str) -> str:
 
     return json.dumps(response) # response as a json string
 
-def get_video_title(youtube_url: str) -> str:
+def get_video_title(youtube_url: str) -> str | None:
 
-    return YouTube(url=youtube_url, proxies=pytubefix_proxies).title
+    yt = YouTube(url=youtube_url, proxies=pytubefix_proxies)
+    return _try_three_times(lambda: yt.title) # wrap title property in a lambda function to avoid immediate evaluation
+
+def get_thumbnail_url(youtube_url: str) -> str:
+
+    yt = YouTube(url=youtube_url, proxies=pytubefix_proxies)
+    return _try_three_times(lambda: yt.thumbnail_url) # wrap thumbnail_url property in a lambda function to
+                                                      # avoid immediate evaluation
 
 def get_video_thumbnail(youtube_url: str) -> str | None:
 
-    thumbnail_url = YouTube(url=youtube_url, proxies=pytubefix_proxies).thumbnail_url
-    response = requests.get(url=thumbnail_url, proxies=pytubefix_proxies, stream=True)
+    thumbnail_url = get_thumbnail_url(youtube_url)
+
+    response = _try_three_times(requests.get, url=thumbnail_url, proxies=pytubefix_proxies, stream=True)
 
     if response.status_code == 200:
         video_id = get_video_id(youtube_url)
@@ -133,7 +154,6 @@ def get_video_thumbnail(youtube_url: str) -> str | None:
         return f"thumbnails/{video_id}.jpg" # path relative to settings.MEDIA_ROOT
 
     return None
-
 
 def get_video_summary(youtube_url: str) -> tuple[str, str,str, str | None]:
 
