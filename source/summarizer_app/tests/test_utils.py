@@ -11,7 +11,7 @@ from youtube_transcript_api import RequestBlocked, FetchedTranscript, FetchedTra
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import WebshareProxyConfig
 from summarizer_app.utils import get_video_id, WrongUrlError, get_video_text, get_text_summary, \
-    get_video_summary, EmptyTranscriptError, get_video_title, get_video_thumbnail, pytubefix_proxies
+    get_video_summary, get_video_title, get_video_thumbnail, pytubefix_proxies
 from xml.etree.ElementTree import ParseError
 from xml.parsers.expat import ExpatError
 from pytubefix import YouTube
@@ -100,6 +100,9 @@ class UtilsTests(TestCase):
 
     @patch("summarizer_app.utils.YTA.fetch")
     def test_get_video_text_raises_RequestBlocked_exception_after_three_failures(self, mock_fetch):
+        """
+        RequestBlocked is a typical exception from youtube-transcript-api.
+        """
 
         video_id = choice(self.video_ids)
 
@@ -110,35 +113,25 @@ class UtilsTests(TestCase):
         with self.assertRaises(RequestBlocked):
             get_video_text(video_id)
 
-        # check the get_transcript method was called three times
+        # check fetch method was called three times
         self.assertEqual(mock_fetch.call_count, 3)
 
     @patch("summarizer_app.utils.YTA.fetch")
-    def test_get_video_text_ExpatError_or_ParseError_raises_EmptyTranscriptError(self, mock_fetch):
+    def test_get_video_text_raises_exception_after_three_failures(self, mock_fetch):
         """
-        This issue is discussed in:
-        https://github.com/jdepoix/youtube-transcript-api/issues/414
-        https://github.com/jdepoix/youtube-transcript-api/issues/320
+        Test from other kinds of exceptions that could happen, e.g., proxy-related exceptions.
         """
 
         video_id = choice(self.video_ids)
 
-        # fetch method raises Expat exception
-        mock_fetch.side_effect = ExpatError()
+        # fetch method raises any exception
+        mock_fetch.side_effect = Exception("Something went wrong")
 
-        # check get_video_text raises EmptyTranscriptError
-        with self.assertRaises(EmptyTranscriptError):
+        with self.assertRaises(Exception):
             get_video_text(video_id)
 
-        # get_transcript method raises ParseError exception
-        mock_fetch.side_effect = ParseError()
-
-        # check get_video_text raises EmptyTranscriptError
-        with self.assertRaises(EmptyTranscriptError):
-            get_video_text(video_id)
-
-        # check fetch method is call two times, one for ExpatError and the other for ParseError
-        self.assertEqual(mock_fetch.call_count, 2)
+        # check fetch method was called three times
+        self.assertEqual(mock_fetch.call_count, 3)
 
     @skipIf(
         condition=os.environ.get("TEST_DEEPSEEK_API") is None,

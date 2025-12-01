@@ -4,9 +4,9 @@ from django.test import TestCase, Client
 from django.urls import resolve, reverse
 from summarizer_app.forms import YoutubeUrlForm
 from summarizer_app.models import YTSummary
-from summarizer_app.utils import EmptyTranscriptError, RequestBlocked
 from summarizer_app.views import UrlView, VideoSummaryView, VideoSummaryListView
 from .test_forms import custom_recaptcha_response
+from youtube_transcript_api import RequestBlocked
 import json
 
 
@@ -180,16 +180,19 @@ class UrlViewTests(TestCase):
     @patch("django_recaptcha.fields.client.submit")
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_EmptyTranscriptError(self, mock_get_video_id, mock_get_video_summary, mocked_submit):
+    def test_post_to_UrlView_logs_exceptions(self, mock_get_video_id, mock_get_video_summary, mocked_submit):
+        """
+        Checks any exception is logged.
+        """
 
         video_id = "EXWJZ2jEe6I"
         mock_get_video_id.return_value = video_id
-        mock_get_video_summary.side_effect = EmptyTranscriptError(video_id)
+        mock_get_video_summary.side_effect = Exception("Something went wrong")
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check the logger logs an error
         with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
-            with self.assertRaises(EmptyTranscriptError):
+            with self.assertRaises(Exception):
                 self.client.post(reverse("home"), data=self.payload)
 
         mocked_submit.assert_called_once()
@@ -199,15 +202,18 @@ class UrlViewTests(TestCase):
     @patch("django_recaptcha.fields.client.submit")
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_RequestBlocked_exception(self, mock_get_video_id, mock_get_video_summary,
+    def test_post_to_UrlView_logs_specific_exception(self, mock_get_video_id, mock_get_video_summary,
                                                            mocked_submit):
+        """
+        Check that specific exceptions are logged, e.g., RequestBlocked exception.
+        """
 
         video_id = "EXWJZ2jEe6I"
         mock_get_video_id.return_value = video_id
         mock_get_video_summary.side_effect = RequestBlocked(video_id)
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
-        # check the logger logs and error
+        # check logger logs an RequestBlocked error
         with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
             with self.assertRaises(RequestBlocked):
                 self.client.post(reverse("home"), data=self.payload)
@@ -219,11 +225,11 @@ class UrlViewTests(TestCase):
     @patch("django_recaptcha.fields.client.submit")
     @patch("summarizer_app.views.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_exceptions_in_UrlView_renders_custom_server_error_page(self, mock_get_video_id, mock_get_video_summary,
+    def test_exceptions_in_UrlView_render_custom_server_error_page(self, mock_get_video_id, mock_get_video_summary,
                                                                         mocked_submit):
         video_id = "EXWJZ2jEe6I"
         mock_get_video_id.return_value = video_id
-        mock_get_video_summary.side_effect = RequestBlocked(video_id)
+        mock_get_video_summary.side_effect = Exception("Something went wrong")
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         self.client.raise_request_exception = False # do not capture the exception to be raised in the POST request

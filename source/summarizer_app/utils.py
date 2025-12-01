@@ -2,15 +2,12 @@ import shutil
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
-from youtube_transcript_api._errors import RequestBlocked, CouldNotRetrieveTranscript
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 import json
 from pydantic import BaseModel, Field
 import os
-from xml.etree.ElementTree import ParseError
-from xml.parsers.expat import ExpatError
 from pytubefix import YouTube
 import requests
 from django.conf import settings
@@ -26,13 +23,6 @@ pytubefix_proxies = {
 
 class WrongUrlError(Exception):
     pass
-
-class EmptyTranscriptError(CouldNotRetrieveTranscript):
-    CAUSE_MESSAGE = (
-        "Request to YouTube was successful, but the response's content is empty, "
-        "so the transcript parsing cannot be performed. "
-        "Retry later."
-    )
 
 
 def get_video_id(youtube_url:str) -> str:
@@ -50,7 +40,6 @@ def get_video_id(youtube_url:str) -> str:
 
     Returns:
         video_id (string): video id
-
     """
     
     split_url = youtube_url.split("v=")
@@ -71,20 +60,13 @@ def get_video_text(video_id: str) -> str:
         )
     )
 
-    # try three times to get the video transcript if the request is blocked
+    # try three times to get the video transcript if the request fails for any reason
     for i in range(3):
         try:
             video_transcript = ytt_api.fetch(video_id=video_id)
-        except RequestBlocked as error:
+        except Exception as error:
             if i == 2:
                 raise error
-        except (ExpatError, ParseError):
-            # This issue is discussed in:
-            # https://github.com/jdepoix/youtube-transcript-api/issues/414
-            # https://github.com/jdepoix/youtube-transcript-api/issues/320
-            # These errors should be solved with the new version of youtube-transcript-api
-            # but just in case they appear again
-             raise EmptyTranscriptError(video_id)
         else:
             break
 
