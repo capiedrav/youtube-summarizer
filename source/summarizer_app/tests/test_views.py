@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from django.conf import settings
 from django.test import TestCase, Client
 from django.urls import resolve, reverse
@@ -21,17 +21,25 @@ class UrlViewTests(TestCase):
         self.payload = {"url": "https://www.youtube.com/watch?v=EXWJZ2jEe6I", "captcha": "PASSED"}
 
     @staticmethod
-    def config_mocks(mock_get_video_id, mock_get_video_summary, mocked_submit):
-        mock_get_video_id.return_value = "EXWJZ2jEe6I"
-        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as test_video_summary:
-            with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as test_video_text:
-                mock_get_video_summary.return_value = (
-                    test_video_summary.read(),
-                    test_video_text.read(),
-                    "Base 5x91 | ¿Será juzgado Milei por la cryptoestafa piramidal LIBRA?", # title
-                    (settings.THUMBNAILS_PATH / "EXWJZ2jEe6I.jpg").resolve().as_posix() # thumbnail path
-                )
+    def config_mocks(mocked_get_video_id, mocked_get_video_summary, mocked_submit):
 
+        video_id = "EXWJZ2jEe6I"
+        video_title = "Base 5x91 | ¿Será juzgado Milei por la cryptoestafa piramidal LIBRA?"
+        video_thumbnail = f"thumbnails/{video_id}"
+
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_summary.txt", "r") as test_video_summary:
+            video_summary = test_video_summary.read()
+        with open(settings.BASE_DIR / "summarizer_app/tests/test_video_text.txt", "r") as test_video_text:
+            video_text = test_video_text.read()
+
+        mocked_get_video_id.return_value = video_id
+        mocked_get_video_summary.return_value = (
+            video_id,
+            video_summary,
+            video_text,
+            video_title,
+            video_thumbnail
+        )
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
     def test_home_url_resolves_to_UrlView(self):
@@ -53,43 +61,44 @@ class UrlViewTests(TestCase):
         self.assertIsInstance(response.context["form"], YoutubeUrlForm)
         # self.assertContains(response, response.context["form"])
 
+
     @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.models.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_redirects_to_VideoSummaryView(self, mock_get_video_id, mock_get_video_summary,
+    def test_post_to_UrlView_redirects_to_VideoSummaryView(self, mocked_get_video_id, mocked_get_video_summary,
                                                            mocked_submit):
 
-        self.config_mocks(mock_get_video_id, mock_get_video_summary, mocked_submit)
+        self.config_mocks(mocked_get_video_id, mocked_get_video_summary, mocked_submit)
 
         response = self.client.post(path=reverse("home"), data=self.payload, follow=True)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/video_summary.html")
-        mock_get_video_id.assert_called_once_with(self.payload["url"])
-        mock_get_video_summary.assert_called_once_with(self.payload["url"])
+        mocked_get_video_id.assert_called_once_with(self.payload["url"])
+        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.models.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_saves_video_summary(self, mock_get_video_id, mock_get_video_summary, mocked_submit):
+    def test_post_to_UrlView_saves_video_summary(self, mocked_get_video_id, mocked_get_video_summary, mocked_submit):
 
-        self.config_mocks(mock_get_video_id, mock_get_video_summary, mocked_submit)
+        self.config_mocks(mocked_get_video_id, mocked_get_video_summary, mocked_submit)
 
         response = self.client.post(reverse("home"), data=self.payload)
 
         self.assertEqual(response.status_code, 302)
-        yt_summary = YTSummary.objects.get(pk=mock_get_video_id.return_value)
+        yt_summary = YTSummary.summaries.get(pk=mocked_get_video_id.return_value)
 
-        self.assertEqual(YTSummary.objects.count(), 1)
-        self.assertEqual(yt_summary.video_id, mock_get_video_id.return_value)
+        self.assertEqual(YTSummary.summaries.count(), 1)
+        self.assertEqual(yt_summary.video_id, mocked_get_video_summary.return_value[0])
         self.assertEqual(yt_summary.url, self.payload["url"])
-        self.assertEqual(yt_summary.video_summary, mock_get_video_summary.return_value[0])
-        self.assertEqual(yt_summary.video_text, mock_get_video_summary.return_value[1])
-        self.assertEqual(yt_summary.title, mock_get_video_summary.return_value[2])
-        self.assertEqual(yt_summary.thumbnail, mock_get_video_summary.return_value[3])
-        mock_get_video_id.assert_called_once_with(self.payload["url"])
-        mock_get_video_summary.assert_called_once_with(self.payload["url"])
+        self.assertEqual(yt_summary.video_summary, mocked_get_video_summary.return_value[1])
+        self.assertEqual(yt_summary.video_text, mocked_get_video_summary.return_value[2])
+        self.assertEqual(yt_summary.title, mocked_get_video_summary.return_value[3])
+        self.assertEqual(yt_summary.thumbnail, mocked_get_video_summary.return_value[4])
+        mocked_get_video_id.assert_called_once_with(self.payload["url"])
+        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -101,7 +110,7 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/home.html")
-        self.assertEqual(YTSummary.objects.count(), 0)
+        self.assertEqual(YTSummary.summaries.count(), 0)
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -112,7 +121,7 @@ class UrlViewTests(TestCase):
         response = self.client.post(reverse("home"), data={"url": "www.google.com", "captcha": "PASSED"})
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(YTSummary.objects.count(), 0)
+        self.assertEqual(YTSummary.summaries.count(), 0)
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -124,7 +133,7 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/home.html")
-        self.assertEqual(YTSummary.objects.count(), 0)
+        self.assertEqual(YTSummary.summaries.count(), 0)
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
@@ -135,20 +144,20 @@ class UrlViewTests(TestCase):
         response = self.client.post(reverse("home"), data=self.payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(YTSummary.objects.count(), 0)
+        self.assertEqual(YTSummary.summaries.count(), 0)
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.models.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
     def test_post_to_UrlView_with_existing_yt_summary_doesnt_call_get_video_summary(self,
-                                                                                    mock_get_video_id,
-                                                                                    mock_get_video_summary,
+                                                                                    mocked_get_video_id,
+                                                                                    mocked_get_video_summary,
                                                                                     mocked_submit
                                                                                     ):
 
         # create a video summary
-        YTSummary.objects.create(
+        YTSummary(
             video_id="EXWJZ2jEe6I",
             url=self.payload["url"],
             video_text="bla bla",
@@ -164,30 +173,30 @@ class UrlViewTests(TestCase):
                 "conclusion": "conclusion"
             }
             """
-        )
+        ).save()
 
-        self.config_mocks(mock_get_video_id, mock_get_video_summary, mocked_submit)
+        self.config_mocks(mocked_get_video_id, mocked_get_video_summary, mocked_submit)
 
         # make a POST request for the same video
-        response = self.client.post(reverse("home"), data=self.payload)
+        response = self.client.post(reverse("home"), data=self.payload, follow=True)
 
-        self.assertEqual(response.status_code, 302)
-        mock_get_video_id.assert_called_once_with(self.payload["url"])
-        self.assertEqual(mock_get_video_summary.call_count, 0) # get_video_summary was not called
-        self.assertEqual(YTSummary.objects.count(), 1)
+        self.assertEqual(response.status_code, 200)
+        mocked_get_video_id.assert_called_once_with(self.payload["url"])
+        self.assertEqual(mocked_get_video_summary.call_count, 0) # get_video_summary was not called
+        self.assertEqual(YTSummary.summaries.count(), 1)
         mocked_submit.assert_called_once()
 
     @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.models.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_exceptions(self, mock_get_video_id, mock_get_video_summary, mocked_submit):
+    def test_post_to_UrlView_logs_exceptions(self, mocked_get_video_id, mocked_get_video_summary, mocked_submit):
         """
         Checks any exception is logged.
         """
 
         video_id = "EXWJZ2jEe6I"
-        mock_get_video_id.return_value = video_id
-        mock_get_video_summary.side_effect = Exception("Something went wrong")
+        mocked_get_video_id.return_value = video_id
+        mocked_get_video_summary.side_effect = Exception("Something went wrong")
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check the logger logs an error
@@ -196,21 +205,21 @@ class UrlViewTests(TestCase):
                 self.client.post(reverse("home"), data=self.payload)
 
         mocked_submit.assert_called_once()
-        mock_get_video_summary.assert_called_once_with(self.payload["url"])
-        mock_get_video_id.assert_called_once_with(self.payload["url"])
+        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
+        mocked_get_video_id.assert_called_once_with(self.payload["url"])
 
     @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.models.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_specific_exception(self, mock_get_video_id, mock_get_video_summary,
-                                                           mocked_submit):
+    def test_post_to_UrlView_logs_specific_exception(self, mocked_get_video_id, mocked_get_video_summary,
+                                                     mocked_submit):
         """
         Check that specific exceptions are logged, e.g., RequestBlocked exception.
         """
 
         video_id = "EXWJZ2jEe6I"
-        mock_get_video_id.return_value = video_id
-        mock_get_video_summary.side_effect = RequestBlocked(video_id)
+        mocked_get_video_id.return_value = video_id
+        mocked_get_video_summary.side_effect = RequestBlocked(video_id)
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         # check logger logs an RequestBlocked error
@@ -219,17 +228,17 @@ class UrlViewTests(TestCase):
                 self.client.post(reverse("home"), data=self.payload)
 
         mocked_submit.assert_called_once()
-        mock_get_video_summary.assert_called_once_with(self.payload["url"])
-        mock_get_video_id.assert_called_once_with(self.payload["url"])
+        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
+        mocked_get_video_id.assert_called_once_with(self.payload["url"])
 
     @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.views.get_video_summary")
+    @patch("summarizer_app.models.get_video_summary")
     @patch("summarizer_app.views.get_video_id")
-    def test_exceptions_in_UrlView_render_custom_server_error_page(self, mock_get_video_id, mock_get_video_summary,
-                                                                        mocked_submit):
+    def test_exceptions_in_UrlView_render_custom_server_error_page(self, mocked_get_video_id, mocked_get_video_summary,
+                                                                   mocked_submit):
         video_id = "EXWJZ2jEe6I"
-        mock_get_video_id.return_value = video_id
-        mock_get_video_summary.side_effect = Exception("Something went wrong")
+        mocked_get_video_id.return_value = video_id
+        mocked_get_video_summary.side_effect = Exception("Something went wrong")
         mocked_submit.return_value = custom_recaptcha_response(score=0.9)
 
         self.client.raise_request_exception = False # do not capture the exception to be raised in the POST request
@@ -237,8 +246,8 @@ class UrlViewTests(TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, "500.html")
-        mock_get_video_summary.assert_called_once_with(self.payload["url"])
-        mock_get_video_id.assert_called_once_with(self.payload["url"])
+        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
+        mocked_get_video_id.assert_called_once_with(self.payload["url"])
 
     def test_wrong_url_path_renders_custom_404_error_page(self):
 
@@ -256,11 +265,11 @@ class VideoSummaryViewTests(TestCase):
     def setUp(self):
 
         self.client = Client()
-        YTSummary.objects.create(
+        YTSummary(
             video_id="EXWJZ2jEe6I",
             url="https://www.youtube.com/watch?v=EXWJZ2jEe6I",
             title="test title",
-            thumbnail=(settings.THUMBNAILS_PATH / "EXWJZ2jEe6I.jpg").resolve().as_posix(),
+            thumbnail="thumbnails/EXWJZ2jEe6I.jpg",
             video_text="bla bla",
             video_summary="""
             {
@@ -273,7 +282,7 @@ class VideoSummaryViewTests(TestCase):
                 ],
                 "conclusion": "conclusion"
             }
-            """)
+            """).save()
 
     def test_video_summary_url_resolves_to_VideoSummaryView(self):
 
@@ -285,13 +294,13 @@ class VideoSummaryViewTests(TestCase):
 
         response = self.client.get(reverse("video-summary", kwargs={"pk": "EXWJZ2jEe6I"}))
 
-        yt_summary = YTSummary.objects.get(pk="EXWJZ2jEe6I")
+        yt_summary = YTSummary.summaries.get(pk="EXWJZ2jEe6I")
         video_summary = response.context["video_summary"]
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/video_summary.html")
         self.assertContains(response, yt_summary.title)
-        self.assertContains(response, yt_summary.thumbnail.path)
+        self.assertContains(response, yt_summary.thumbnail)
         self.assertContains(response, video_summary["overview"][:20])
         self.assertContains(response, video_summary["key_takeaways"][0][:20])
         self.assertContains(response, video_summary["conclusion"][:20])
@@ -328,7 +337,7 @@ class VideoSummaryListViewTests(TestCase):
             """
                 )
             )
-        YTSummary.objects.bulk_create(summaries) # save database entries with a single query
+        YTSummary.summaries.bulk_create(summaries) # save database entries with a single query
 
     def test_video_summaries_url_resolves_to_VideoSummariesListView(self):
 
@@ -342,11 +351,11 @@ class VideoSummaryListViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "summarizer_app/video_summaries.html")
-        self.assertEqual(YTSummary.objects.count(), 10)
+        self.assertEqual(YTSummary.summaries.count(), 10)
 
         # get the first and last video summaries in the database
-        yt_1 = YTSummary.objects.get(pk="video_1")
-        yt_10 = YTSummary.objects.get(pk="video_10")
+        yt_1 = YTSummary.summaries.get(pk="video_1")
+        yt_10 = YTSummary.summaries.get(pk="video_10")
 
         # check they're rendered in the template
         self.assertContains(response, yt_1.title)
