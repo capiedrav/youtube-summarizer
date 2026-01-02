@@ -10,3 +10,32 @@ services:
       - ./nginx:/app/nginx # collect static files here
 
     env_file: "./.env"
+
+    depends_on:
+      - redis
+
+    command: |
+      python manage.py runserver 0.0.0.0:8000
+
+  redis:
+    image: redis:7.0.11-alpine
+
+    container_name: redis-cntr
+
+  celery:
+    build: . # uses the same Dockerfile as web service
+
+    volumes: # uses the same source code as web service
+      - ./source:/app/source
+      - ./nginx:/app/nginx # collect static files here
+
+    env_file:
+      - "./.env"
+
+    command: |
+      celery -A project_config.celery worker -l INFO
+
+    depends_on:
+      - redis
+
+    container_name: celery-cntr
