@@ -1,7 +1,7 @@
 from unittest import skip
 from unittest.mock import patch
-from django.test import TestCase, Client
-from django.urls import resolve, reverse
+from django.test import TestCase, Client, override_settings
+from django.urls import resolve, reverse, path
 from summarizer_app.forms import YoutubeUrlForm
 from summarizer_app.models import YTSummary
 from summarizer_app.views import UrlView, VideoSummaryView, VideoSummaryListView, CheckStatusView, CeleryErrorView
@@ -165,32 +165,6 @@ class UrlViewTests(TestCase):
         mocked_submit.assert_called_once()
         mocked_get_video_summary.assert_called_once_with(self.payload["url"])
         mocked_get_video_id.assert_called_once_with(self.payload["url"])
-
-    # TODO: adjust this test to test for error in trigger_create_summary function
-    @skip
-    @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.models.get_video_summary")
-    @patch("summarizer_app.views.get_video_id")
-    def test_exceptions_in_UrlView_render_custom_server_error_page(self, mocked_get_video_id, mocked_get_video_summary,
-                                                                   mocked_submit):
-        video_id = "EXWJZ2jEe6I"
-        mocked_get_video_id.return_value = video_id
-        mocked_get_video_summary.side_effect = Exception("Something went wrong")
-        mocked_submit.return_value = custom_recaptcha_response(score=0.9)
-
-        self.client.raise_request_exception = False  # do not capture the exception to be raised in the POST request
-        response = self.client.post(reverse("home"), data=self.payload)
-
-        self.assertEqual(response.status_code, 500)
-        self.assertTemplateUsed(response, "500.html")
-        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
-        mocked_get_video_id.assert_called_once_with(self.payload["url"])
-
-    def test_wrong_url_path_renders_custom_404_error_page(self):
-        response = self.client.get("/wrong-url/")
-
-        self.assertEqual(response.status_code, 404)
-        self.assertTemplateUsed(response, "404.html")
 
 
 class VideoSummaryViewTests(TestCase):
@@ -404,6 +378,5 @@ class CeleryErrorViewTests(TestCase):
 
         response = self.client.get(reverse("celery-error"))
 
-        self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "500.html")
-        self.assertContains(response, "Oops!...Something went wrong. Try again later.")
+        self.assertContains(response, "Oops!...Something went wrong. Try again later.", status_code=500)

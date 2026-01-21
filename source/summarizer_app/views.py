@@ -115,5 +115,16 @@ class CheckStatusView(TemplateView):
 
         
 class CeleryErrorView(TemplateView):
+    """
+    This class displays 500 error page when celery task fails.
+    """
 
     template_name = "500.html"
+
+    def get(self, request, *args, **kwargs):
+
+        response = super().get(request, *args, **kwargs)
+
+        response.status_code = 500 # signal a server error
+
+        return response
