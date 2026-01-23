@@ -24,21 +24,19 @@ class UrlView(FormView):
 
     def form_valid(self, form):
 
-        # context = self.get_context_data(form=form)
         youtube_url = form.cleaned_data["url"]
         video_id = get_video_id(youtube_url)
 
         # if a new video summary
         if not YTSummary.summaries.filter(video_id=video_id).exists():
-            try: # create the summary (running a celery task)
-                result = trigger_create_summary(youtube_url)
-            except Exception as e: # log any exception
-                logger.error(msg=f"{type(e).__name__} {form.cleaned_data['url']}")
-                raise e
-            else:
-                return redirect(reverse("check-status", kwargs={"task_id": result.task_id}))
-        else: # retrieve the summary stored in the database
+            # create the summary (running a celery task)
+            result = trigger_create_summary(youtube_url)
+
+            # move to waiting page
+            return redirect(reverse("check-status", kwargs={"task_id": result.task_id}))
+        else: # it is a stored summary, retrieve it from the database
             yt_summary = YTSummary.summaries.get(video_id=video_id)
+
             return redirect(yt_summary)
     
 

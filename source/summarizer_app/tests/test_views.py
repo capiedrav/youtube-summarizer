@@ -117,55 +117,6 @@ class UrlViewTests(TestCase):
         self.assertEqual(YTSummary.summaries.count(), 1)
         mocked_submit.assert_called_once()
 
-    # TODO: move this test to CheckStatusView
-    @skip
-    @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.models.get_video_summary")
-    @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_exceptions(self, mocked_get_video_id, mocked_get_video_summary, mocked_submit):
-        """
-        Checks any exception is logged.
-        """
-
-        video_id = "EXWJZ2jEe6I"
-        mocked_get_video_id.return_value = video_id
-        mocked_get_video_summary.side_effect = Exception("Something went wrong")
-        mocked_submit.return_value = custom_recaptcha_response(score=0.9)
-
-        # check the logger logs an error
-        with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
-            with self.assertRaises(Exception):
-                self.client.post(reverse("home"), data=self.payload)
-
-        mocked_submit.assert_called_once()
-        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
-        mocked_get_video_id.assert_called_once_with(self.payload["url"])
-
-    # TODO: move this test to CheckStatusView
-    @skip
-    @patch("django_recaptcha.fields.client.submit")
-    @patch("summarizer_app.models.get_video_summary")
-    @patch("summarizer_app.views.get_video_id")
-    def test_post_to_UrlView_logs_specific_exception(self, mocked_get_video_id, mocked_get_video_summary,
-                                                     mocked_submit):
-        """
-        Check that specific exceptions are logged, e.g., RequestBlocked exception.
-        """
-
-        video_id = "EXWJZ2jEe6I"
-        mocked_get_video_id.return_value = video_id
-        mocked_get_video_summary.side_effect = RequestBlocked(video_id)
-        mocked_submit.return_value = custom_recaptcha_response(score=0.9)
-
-        # check logger logs an RequestBlocked error
-        with self.assertLogs(logger="summarizer_app.views", level="ERROR"):
-            with self.assertRaises(RequestBlocked):
-                self.client.post(reverse("home"), data=self.payload)
-
-        mocked_submit.assert_called_once()
-        mocked_get_video_summary.assert_called_once_with(self.payload["url"])
-        mocked_get_video_id.assert_called_once_with(self.payload["url"])
-
 
 class VideoSummaryViewTests(TestCase):
     """

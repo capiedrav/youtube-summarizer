@@ -8,7 +8,7 @@ from django.conf import settings
 from pytubefix import YouTube
 from requests import Response
 from summarizer_app.youtube import get_video_id, WrongUrlError, get_video_text, get_video_title, _get_thumbnail_url, \
-    _get_thumbnail_image, _save_thumbnail_image, get_video_thumbnail
+    _get_thumbnail_image, _save_thumbnail_image, get_video_thumbnail, _try_three_times
 from youtube_transcript_api import YouTubeTranscriptApi as YTA
 from youtube_transcript_api import FetchedTranscript, FetchedTranscriptSnippet, RequestBlocked
 from youtube_transcript_api.proxies import WebshareProxyConfig
@@ -72,8 +72,8 @@ class YoutubeTests(TestCase):
         self.assertIsInstance(transcript, FetchedTranscript)
 
     @patch("summarizer_app.youtube.YTA.fetch")
-    def test_get_video_text(self, mock_fetch):
-        mock_fetch.return_value = FetchedTranscript(
+    def test_get_video_text(self, mocked_fetch):
+        mocked_fetch.return_value = FetchedTranscript(
             snippets=[
                 FetchedTranscriptSnippet(text="Test line 1", start=0.0, duration=1.50),
                 FetchedTranscriptSnippet(text="line between", start=1.5, duration=2.0),
@@ -90,11 +90,12 @@ class YoutubeTests(TestCase):
         # call the function under text with a random video id
         video_text = get_video_text(choice(self.video_ids))
 
-        mock_fetch.assert_called_once()  # check that the mocked function was called
+        mocked_fetch.assert_called_once()  # check that the mocked function was called
         self.assertEqual(video_text, "Test line 1\nline between\ntesting the end line")
 
+    @patch("summarizer_app.youtube.logger.error")
     @patch("summarizer_app.youtube.YTA.fetch")
-    def test_get_video_text_raises_RequestBlocked_exception_after_three_failures(self, mock_fetch):
+    def test_get_video_text_raises_RequestBlocked_exception_after_three_failures(self, mocked_fetch, mocked_logger):
         """
         RequestBlocked is a typical exception from youtube-transcript-api.
         """
@@ -102,17 +103,19 @@ class YoutubeTests(TestCase):
         video_id = choice(self.video_ids)
 
         # fetch method raises RequestBlocked exception
-        mock_fetch.side_effect = RequestBlocked(video_id)
+        mocked_fetch.side_effect = RequestBlocked(video_id)
 
         # check the exception was raised
         with self.assertRaises(RequestBlocked):
             get_video_text(video_id)
 
-        # check fetch method was called three times
-        self.assertEqual(mock_fetch.call_count, 3)
+        # check fetch method and logger function were called three times
+        self.assertEqual(mocked_fetch.call_count, 3)
+        self.assertEqual(mocked_logger.call_count, 3)
 
+    @patch("summarizer_app.youtube.logger.error")
     @patch("summarizer_app.youtube.YTA.fetch")
-    def test_get_video_text_raises_exception_after_three_failures(self, mock_fetch):
+    def test_get_video_text_raises_exception_after_three_failures(self, mocked_fetch, mocked_logger):
         """
         Test for other kinds of exceptions that could happen, e.g., proxy-related exceptions.
         """
@@ -120,13 +123,14 @@ class YoutubeTests(TestCase):
         video_id = choice(self.video_ids)
 
         # fetch method raises an exception
-        mock_fetch.side_effect = Exception("Something went wrong")
+        mocked_fetch.side_effect = Exception("Something went wrong")
 
         with self.assertRaises(Exception):
             get_video_text(video_id)
 
-        # check fetch method was called three times
-        self.assertEqual(mock_fetch.call_count, 3)
+        # check fetch method and logger function were called three times
+        self.assertEqual(mocked_fetch.call_count, 3)
+        self.assertEqual(mocked_logger.call_count, 3)
 
     @patch("summarizer_app.youtube.YouTube.title", new_callable=PropertyMock)
     def test_get_video_title(self, mocked_title):
@@ -138,8 +142,9 @@ class YoutubeTests(TestCase):
         self.assertEqual(title, mocked_title.return_value)
         mocked_title.assert_called_once()
 
+    @patch("summarizer_app.youtube.logger.error")
     @patch("summarizer_app.youtube.YouTube.title", new_callable=PropertyMock)
-    def test_get_video_title_raises_exception_after_three_failures(self, mocked_title):
+    def test_get_video_title_raises_exception_after_three_failures(self, mocked_title, mocked_logger):
 
         mocked_title.side_effect = Exception("Something went wrong")
 
@@ -147,6 +152,7 @@ class YoutubeTests(TestCase):
             get_video_title(youtube_url=self.youtube_urls[0])
 
         self.assertEqual(mocked_title.call_count, 3)
+        self.assertEqual(mocked_logger.call_count, 3)
 
     @patch("summarizer_app.youtube.YouTube.thumbnail_url", new_callable=PropertyMock)
     def test_get_thumbnail_url(self, mocked_thumbnail_url):
@@ -158,14 +164,17 @@ class YoutubeTests(TestCase):
         self.assertEqual(thumbnail_url, mocked_thumbnail_url.return_value)
         mocked_thumbnail_url.assert_called_once()
 
+    @patch("summarizer_app.youtube.logger.error")
     @patch("summarizer_app.youtube.YouTube.thumbnail_url", new_callable=PropertyMock)
-    def test_get_thumbnail_url_raises_exception_after_three_failures(self, mocked_thumbnail_url):
+    def test_get_thumbnail_url_raises_exception_after_three_failures(self, mocked_thumbnail_url, mocked_logger):
 
         mocked_thumbnail_url.side_effect = Exception("Something went wrong")
 
         with self.assertRaises(Exception):
             _get_thumbnail_url(youtube_url=self.youtube_urls[0])
+
         self.assertEqual(mocked_thumbnail_url.call_count, 3)
+        self.assertEqual(mocked_logger.call_count, 3)
 
     @patch("summarizer_app.youtube.requests.get")
     def test_get_thumbnail_image(self, mocked_get):
@@ -175,14 +184,17 @@ class YoutubeTests(TestCase):
 
         self.assertEqual(_get_thumbnail_image(self.youtube_urls[0]).raw, mocked_get.return_value.raw)
 
+    @patch("summarizer_app.youtube.logger.error")
     @patch("summarizer_app.youtube.requests.get")
-    def test_get_thumbnail_image_raises_exception_after_three_failures(self, mocked_get):
+    def test_get_thumbnail_image_raises_exception_after_three_failures(self, mocked_get, mocked_logger):
 
         mocked_get.side_effect = Exception("Something went wrong")
 
         with self.assertRaises(Exception):
             _get_thumbnail_image(self.youtube_urls[0])
+
         self.assertEqual(mocked_get.call_count, 3)
+        self.assertEqual(mocked_logger.call_count, 3)
 
     @patch("summarizer_app.youtube.shutil.copyfileobj")
     @patch("summarizer_app.youtube.open")
@@ -231,13 +243,24 @@ class YoutubeTests(TestCase):
         mocked_get_thumbnail_image.return_value.raw = io.BytesIO(b"") # no thumbnail data
         mocked_get_thumbnail_image.return_value.status_code = 404 # wrong status code
 
-
         thumbnail_rel_path = get_video_thumbnail(self.youtube_urls[0])
 
         self.assertIsNone(thumbnail_rel_path) # no thumbnail path
         mocked_get_thumbnail_url.assert_called_once()
         mocked_get_thumbnail_image.assert_called_once()
         mocked_save_thumbnail_image.assert_not_called() # _save_thumbnail_image is not called
+
+    def test_try_times_function_logs_errors(self):
+
+        def raise_error():
+            raise Exception("Something went wrong")
+
+        with self.assertRaises(Exception):
+            # check the logger logs exceptions
+            with self.assertLogs(logger="summarizer_app.youtube", level="ERROR") as cm:
+                _try_three_times(raise_error)
+
+        self.assertEqual(len(cm.records), 3) # the logger logs max three exceptions
 
 
 @skipIf(

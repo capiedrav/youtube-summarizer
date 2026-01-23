@@ -6,8 +6,11 @@ from youtube_transcript_api.formatters import TextFormatter
 from pytubefix import YouTube
 import requests
 from django.conf import settings
+import logging
 import shutil
 import os
+
+logger = logging.getLogger(__name__)
 
 # concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
 proxy_username = os.getenv("PROXY_USERNAME", default="no_username") + "-rotate"
@@ -36,6 +39,7 @@ def _try_three_times(function: Callable, **kwargs) -> Any:
         try:
             return function(**kwargs)
         except Exception as error:
+            logger.error(msg=f"{type(error).__name__} {error}")
             if i == 2:
                 raise error
 

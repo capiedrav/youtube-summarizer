@@ -160,14 +160,17 @@ LOGGING = {
     'disable_existing_loggers': False,
     "loggers": {
         "summarizer_app": {
-            "handlers": ["console", ],
+            "handlers": ["file", ],
             "level": "ERROR"
         }
     },
     "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
             "level": "ERROR",
+            "filename": BASE_DIR / "../logs/error.log", # TODO: make sure this path exists in staging and production
+            "maxBytes": 1024 * 1024 * 5, # 5MB
+            "backupCount": 5, # keep 5 old log files
             "formatter": "verbose"
         }
     },

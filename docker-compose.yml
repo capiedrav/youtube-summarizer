@@ -8,6 +8,7 @@ services:
     volumes:
       - ./source:/app/source
       - ./nginx:/app/nginx # collect static files here
+      - ./logs:/app/logs
 
     env_file: "./.env"
 
@@ -25,9 +26,10 @@ services:
   celery:
     build: . # uses the same Dockerfile as web service
 
-    volumes: # uses the same source code as web service
+    volumes: # uses the same volumes as web service
       - ./source:/app/source
       - ./nginx:/app/nginx # collect static files here
+      - ./logs:/app/logs
 
     env_file:
       - "./.env"
