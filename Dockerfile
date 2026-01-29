@@ -15,8 +15,8 @@ RUN adduser --disabled-password --no-create-home app-user
 # copy source code
 COPY ./source ./source
 
-# create folder for prod database and for files-volume (nginx)
-RUN mkdir -p ./db ./nginx
+# create folder for prod database, for files-volume (nginx), and for logs
+RUN mkdir -p ./db ./nginx ./logs
 
 
 # change ownership and permissions of the files
