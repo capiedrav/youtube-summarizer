@@ -3,11 +3,14 @@ services:
     build: .
 
     volumes:
-      - db-volume-staging:/app/db
-      # this volume is shared with nginx container
-      - files-volume-staging:/app/nginx
+      - db-volume-staging:/app/db # this volume is shared with celery container
+      - files-volume-staging:/app/nginx # this volume is shared with nginx and celery containers
+      - logs-volume-staging:/app/logs # this volume is shared with celery container
 
     env_file: "./.env-staging"
+
+    depends_on:
+      - redis
 
     networks:
       - yt-summarizer-network
@@ -42,6 +45,36 @@ services:
 
     container_name: yt-summarizer-nginx-staging
 
+  redis:
+    image: redis:7.0.11-alpine
+
+    networks:
+      - yt-summarizer-network
+
+    container_name: redis-cntr
+
+  celery:
+    build: . # uses the same Dockerfile as web service
+
+    volumes: # uses the same volumes as web service
+      - db-volume-staging:/app/db
+      - files-volume-staging:/app/nginx
+      - logs-volume-staging:/app/logs
+
+    env_file:
+      - "./.env-staging"
+
+    command: |
+      celery -A project_config.celery worker -l INFO
+
+    depends_on:
+      - redis
+
+    networks:
+      - yt-summarizer-network
+
+    container_name: celery-cntr
+
   cloudflare_tunnel:
     image: cloudflare/cloudflared:1449-569a7c3c9ed0
 
@@ -59,6 +92,7 @@ services:
 volumes:
   db-volume-staging:
   files-volume-staging:
+  logs-volume-staging:
 
 networks:
   yt-summarizer-network:

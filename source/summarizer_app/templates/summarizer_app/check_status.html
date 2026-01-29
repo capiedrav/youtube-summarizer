@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block extra_libraries %}
+  <!-- HTMX library -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col d-flex flex-column justify-content-center align-items-center text-center min-vh-100">
+    <h1>Thank you for using Youtube-Summarizer</h1>
+    <h2 class="fw-light">We're processing your request</h2>
+    <div class="spinner-border mt-2 text-secondary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    {# poll check-status page every 3s to see whether the celery task is complete #}
+    <div hx-get="{% url 'check-status' task_id %}" hx-trigger="every 3s" hx-swap="none" hx-target=""></div>
+  </div>
+</div>
+{% endblock %}

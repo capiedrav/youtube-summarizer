@@ -1,7 +1,26 @@
 from django.db import models
 from .forms import youtube_url_validator
 from django.urls import reverse
+from .summary import get_video_summary
 
+
+class YTSummaryManager(models.Manager):
+
+    def create(self, youtube_url: str) -> "YTSummary":
+
+        video_id, video_summary, video_text, video_title, video_thumbnail = get_video_summary(youtube_url)
+
+        yt_summary = self.model(
+            video_id=video_id,
+            url=youtube_url,
+            title=video_title,
+            thumbnail=video_thumbnail,
+            video_text=video_text,
+            video_summary=video_summary
+        )
+        yt_summary.save()
+
+        return yt_summary
 
 class YTSummary(models.Model):
 
@@ -13,6 +32,7 @@ class YTSummary(models.Model):
     video_text = models.TextField(default=None, null=False)
     video_summary = models.TextField(default=None, null=False) # the summaries are stored as json strings
     created_on = models.DateTimeField(auto_now_add=True)
+    summaries = YTSummaryManager() # default object manager
 
     class Meta:
         verbose_name_plural = "YTSummaries"
