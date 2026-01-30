@@ -139,7 +139,6 @@ dependencies:
   - traitlets=5.14.3=py311h06a4308_0
   - typing-extensions=4.12.2=py311h06a4308_0
   - typing_extensions=4.12.2=py311h06a4308_0
-  - tzdata=2025a=h04d1e81_0
   - wcwidth=0.2.13=py311h06a4308_0
   - websocket-client=1.8.0=py311h06a4308_0
   - wheel=0.45.1=py311h06a4308_0
@@ -171,6 +170,7 @@ dependencies:
       - aiohappyeyeballs==2.6.1
       - aiohttp==3.12.15
       - aiosignal==1.4.0
+      - amqp==5.3.1
       - annotated-types==0.7.0
       - anyio==4.8.0
       - argon2-cffi==25.1.0
@@ -181,8 +181,13 @@ dependencies:
       - autobahn==24.4.2
       - automat==25.4.16
       - babel==2.17.0
+      - billiard==4.2.4
+      - celery==5.6.1
       - certifi==2025.1.31
       - charset-normalizer==3.4.1
+      - click-didyoumean==0.3.1
+      - click-plugins==1.1.1.2
+      - click-repl==0.3.0
       - comm==0.2.2
       - constantly==23.10.4
       - crispy-bootstrap5==2024.10
@@ -214,6 +219,7 @@ dependencies:
       - jsonpointer==3.0.0
       - jsonschema==4.24.1
       - jsonschema-specifications==2025.4.1
+      - kombu==5.6.2
       - langchain==0.3.27
       - langchain-core==0.3.78
       - langchain-deepseek==0.1.4
@@ -245,6 +251,7 @@ dependencies:
       - python-json-logger==3.3.0
       - pytubefix==9.4.1
       - pyzmq==27.0.0
+      - redis==7.1.0
       - referencing==0.36.2
       - regex==2025.9.18
       - requests==2.32.3
@@ -264,8 +271,11 @@ dependencies:
       - twisted==25.5.0
       - txaio==25.6.1
       - types-python-dateutil==2.9.0.20250708
+      - tzdata==2025.3
+      - tzlocal==5.3.1
       - uri-template==1.3.0
       - urllib3==2.3.0
+      - vine==5.1.0
       - webcolors==24.11.1
       - webencodings==0.5.1
       - widgetsnbextension==4.0.14

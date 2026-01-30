@@ -3,10 +3,14 @@ services:
     build: .
 
     volumes:
-      - db-volume-prod:/app/db
-      # this volume is shared with nginx container
-      - files-volume-prod:/app/nginx
+      - db-volume-prod:/app/db # this volume is shared with celery container
+      - files-volume-prod:/app/nginx # this volume is shared with nginx container
+      - logs-volume-prod:/app/logs # this volume is shared with celery container
+
     env_file: "./.env"
+
+    depends_on:
+      - redis
 
     networks:
       - yt-summarizer-network
@@ -43,6 +47,36 @@ services:
 
     container_name: yt-summarizer-nginx
 
+  redis:
+    image: redis:7.0.11-alpine
+
+    networks:
+      - yt-summarizer-network
+
+    container_name: yt-summarizer-redis-cntr
+
+  celery:
+    build: . # uses the same Dockerfile as web service
+
+    volumes: # uses the same volumes as web service
+      - db-volume-prod:/app/db
+      - files-volume-prod:/app/nginx
+      - logs-volume-prod:/app/logs
+
+    env_file:
+      - "./.env"
+
+    command: |
+      celery -A project_config.celery worker -l INFO
+
+    depends_on:
+      - redis
+
+    networks:
+      - yt-summarizer-network
+
+    container_name: yt-summarizer-celery-cntr
+
   cloudflare_tunnel:
     image: cloudflare/cloudflared:1449-569a7c3c9ed0
 
@@ -60,6 +94,7 @@ services:
 volumes:
   db-volume-prod:
   files-volume-prod:
+  logs-volume-prod:
 
 networks:
   yt-summarizer-network:
