@@ -53,7 +53,7 @@ services:
     networks:
       - yt-summarizer-network
 
-    container_name: redis-cntr
+    container_name: yt-summarizer-redis-cntr
 
   celery:
     build: . # uses the same Dockerfile as web service
@@ -75,7 +75,7 @@ services:
     networks:
       - yt-summarizer-network
 
-    container_name: celery-cntr
+    container_name: yt-summarizer-celery-cntr
 
   cloudflare_tunnel:
     image: cloudflare/cloudflared:1449-569a7c3c9ed0
