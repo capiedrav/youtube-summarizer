@@ -280,5 +280,5 @@ pyrightconfig.json
 nginx/static_files
 nginx/media_files
 experiments/
-
+logs/
 # End of https://www.toptal.com/developers/gitignore/api/python,django,visualstudiocode
