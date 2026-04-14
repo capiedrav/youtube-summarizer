@@ -280,4 +280,7 @@ pyrightconfig.json
 nginx/
 logs/
 
+.ec2-ssh-connection.txt
+debian-aws.pem
+
 # End of https://www.toptal.com/developers/gitignore/api/python,django,visualstudiocode
