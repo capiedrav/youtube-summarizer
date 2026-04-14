@@ -1,7 +1,7 @@
 from typing import Callable, Any
 from requests import Response
-from youtube_transcript_api import YouTubeTranscriptApi as YTA
-from youtube_transcript_api.proxies import WebshareProxyConfig
+from youtube_transcript_api import YouTubeTranscriptApi as YTA, YouTubeTranscriptApi
+from youtube_transcript_api.proxies import GenericProxyConfig
 from youtube_transcript_api.formatters import TextFormatter
 from pytubefix import YouTube
 import requests
@@ -12,13 +12,26 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
-proxy_username = os.getenv("PROXY_USERNAME", default="no_username") + "-rotate"
+# proxy provided by dataimpulse
+proxy_username = os.getenv("PROXY_USERNAME", default="no_username")
 proxy_password = os.getenv("PROXY_PASSWORD", default="no_password")
-pytubefix_proxies = {
-    "http": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
-    "https": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
+proxy_port = os.getenv("PROXY_PORT", default="8080")
+proxies = { # proxies urls
+    "http": f"http://{proxy_username}:{proxy_password}@gw.dataimpulse.com:{proxy_port}",
+    "https": f"http://{proxy_username}:{proxy_password}@gw.dataimpulse.com:{proxy_port}",
 }
+
+def get_yta() -> YouTubeTranscriptApi:
+    """
+    Get a YoutubeTranscriptApi instance configured with proxies and ready to use.
+    """
+
+    return YTA(# config youtube-transcript-api using dataimpulse proxy credentials
+        proxy_config=GenericProxyConfig(
+            http_url=proxies.get("http", ""),
+            https_url=proxies.get("https", ""),
+        )
+    )
 
 class WrongUrlError(Exception):
     pass
@@ -73,12 +86,8 @@ def get_video_id(youtube_url: str) -> str:
 
 
 def get_video_text(video_id: str) -> str:
-    ytt_api = YTA(  # config youtube-transcript-api using Webshare proxy credentials
-        proxy_config=WebshareProxyConfig(
-            proxy_username=os.environ.get("PROXY_USERNAME"),
-            proxy_password=os.environ.get("PROXY_PASSWORD")
-        )
-    )
+
+    ytt_api = get_yta()
 
     video_transcript = _try_three_times(ytt_api.fetch, video_id=video_id)  # get video transcript
 
@@ -90,7 +99,7 @@ def get_video_text(video_id: str) -> str:
 
 def get_video_title(youtube_url: str) -> str | None:
 
-    yt = YouTube(url=youtube_url, proxies=pytubefix_proxies)
+    yt = YouTube(url=youtube_url, proxies=proxies)
     return _try_three_times(lambda: yt.title) # wrap title property in a lambda function to avoid immediate evaluation
 
 def _get_thumbnail_url(youtube_url: str) -> str:
@@ -104,7 +113,7 @@ def _get_thumbnail_url(youtube_url: str) -> str:
         (str) thumbnail url.
     """
 
-    yt = YouTube(url=youtube_url, proxies=pytubefix_proxies)
+    yt = YouTube(url=youtube_url, proxies=proxies)
     return _try_three_times(lambda: yt.thumbnail_url) # wrap thumbnail_url property in a lambda function to
                                                       # avoid immediate evaluation
 
@@ -116,7 +125,7 @@ def _get_thumbnail_image(thumbnail_url: str) -> Response:
          The thumbnail image data in a Response object.
     """
 
-    return _try_three_times(requests.get, url=thumbnail_url, proxies=pytubefix_proxies, stream=True)
+    return _try_three_times(requests.get, url=thumbnail_url, proxies=proxies, stream=True)
 
 def _save_thumbnail_image(response: Response, video_id: str) -> str:
     """
