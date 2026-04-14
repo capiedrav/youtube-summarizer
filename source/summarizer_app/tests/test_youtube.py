@@ -8,10 +8,8 @@ from django.conf import settings
 from pytubefix import YouTube
 from requests import Response
 from summarizer_app.youtube import get_video_id, WrongUrlError, get_video_text, get_video_title, _get_thumbnail_url, \
-    _get_thumbnail_image, _save_thumbnail_image, get_video_thumbnail, _try_three_times
-from youtube_transcript_api import YouTubeTranscriptApi as YTA
+    _get_thumbnail_image, _save_thumbnail_image, get_video_thumbnail, _try_three_times, get_yta, proxies
 from youtube_transcript_api import FetchedTranscript, FetchedTranscriptSnippet, RequestBlocked
-from youtube_transcript_api.proxies import WebshareProxyConfig
 from random import choice
 import os
 import io
@@ -60,12 +58,7 @@ class YoutubeTests(TestCase):
         reason="This test is time and money consuming, because it uses a paid proxy"
     )
     def test_youtube_transcript_api(self):
-        ytt_api = YTA(
-            proxy_config=WebshareProxyConfig(
-                proxy_username=os.environ.get("PROXY_USERNAME"),
-                proxy_password=os.environ.get("PROXY_PASSWORD")
-            )
-        )
+        ytt_api = get_yta()
 
         transcript = ytt_api.fetch(video_id=self.video_ids[0])
 
@@ -276,27 +269,17 @@ class PytubeFixTests(TestCase):
 
         self.youtube_url = "https://www.youtube.com/watch?v=5bId3N7QZec"
 
-        # concat '-rotate' to PROXY_USERNAME for automatic proxy ip address rotation
-        proxy_username = os.getenv("PROXY_USERNAME") + "-rotate"
-        proxy_password = os.getenv("PROXY_PASSWORD")
-
-        # config proxies
-        self.proxies = {
-            "http": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
-            "https": f"http://{proxy_username}:{proxy_password}@p.webshare.io:80",
-        }
-
     def test_get_video_title(self):
 
-        yt = YouTube(url=self.youtube_url, proxies=self.proxies)
+        yt = YouTube(url=self.youtube_url, proxies=proxies)
 
         self.assertEqual(yt.title, "how programmers overprepare for job interviews")
 
     def test_get_video_thumbnail(self):
 
-        yt = YouTube(url=self.youtube_url, proxies=self.proxies)
+        yt = YouTube(url=self.youtube_url, proxies=proxies)
 
-        req = requests.get(yt.thumbnail_url, proxies=self.proxies, stream=True)
+        req = requests.get(yt.thumbnail_url, proxies=proxies, stream=True)
 
         with NamedTemporaryFile(mode="wb", suffix=".jpg") as thumbnail:
             req.raw.decode_content = True
