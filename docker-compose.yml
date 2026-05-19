@@ -2,10 +2,13 @@ services:
   web:
     build: .
 
+    ports:
+      - 8000:8000
+
     volumes:
-      - db-volume-prod:/app/db # this volume is shared with celery container
-      - files-volume-prod:/app/nginx # this volume is shared with nginx container
-      - logs-volume-prod:/app/logs # this volume is shared with celery container
+      - ./source:/app/source # source code
+      - ./nginx:/app/nginx:ro # collect static and media files (read-only)
+      - ./logs:/app/logs # collect app logs
 
     env_file: "./.env"
 
@@ -13,58 +16,30 @@ services:
       - redis
 
     networks:
-      - yt-summarizer-network
+      - yt-summarizer-net
 
-    command: >
-      sh -c "python manage.py migrate &&
-             # remove default nginx html files
-             rm -f /app/nginx/*.html &&
-             # collect static files (creates STATIC_ROOT path if not already exits)
-             python manage.py collectstatic --no-input &&
-             # create folder for media files if not already exist
-             mkdir -p /app/nginx/media/thumbnails &&
-             # start django app 
-             gunicorn -c ./project_config/gunicorn.py"
-
-    restart: unless-stopped
+    command: |
+      python manage.py runserver 0.0.0.0:8000
 
     container_name: yt-summarizer
-
-  nginx:
-    build: ./nginx
-
-    volumes:
-      # this volume is shared with django container (read-only)
-      - files-volume-prod:/usr/share/nginx/html:ro
-
-    depends_on:
-      - web
-
-    networks:
-      - yt-summarizer-network
-
-    restart: unless-stopped
-
-    container_name: yt-summarizer-nginx
 
   redis:
     image: redis:7.0.11-alpine
 
     networks:
-      - yt-summarizer-network
+      - yt-summarizer-net
 
-    container_name: yt-summarizer-redis-cntr
+    container_name: yt-summarizer-redis
 
   celery:
     build: . # uses the same Dockerfile as web service
 
     volumes: # uses the same volumes as web service
-      - db-volume-prod:/app/db
-      - files-volume-prod:/app/nginx
-      - logs-volume-prod:/app/logs
+      - ./source:/app/source
+      - ./nginx:/app/nginx
+      - ./logs:/app/logs
 
-    env_file:
-      - "./.env"
+    env_file: "./.env"
 
     command: |
       celery -A project_config.celery worker -l INFO
@@ -73,30 +48,11 @@ services:
       - redis
 
     networks:
-      - yt-summarizer-network
+      - yt-summarizer-net
 
-    container_name: yt-summarizer-celery-cntr
-
-  cloudflare_tunnel:
-    image: cloudflare/cloudflared:1449-569a7c3c9ed0
-
-    env_file: "./.env"
-
-    command: tunnel --no-autoupdate run
-
-    networks:
-      - yt-summarizer-network
-
-    restart: unless-stopped
-
-    container_name: yt-summarizer-cf-tunnel
-
-volumes:
-  db-volume-prod:
-  files-volume-prod:
-  logs-volume-prod:
+    container_name: yt-summarizer-celery
 
 networks:
-  yt-summarizer-network:
-    name: yt-summarizer-network
+  yt-summarizer-net:
+    name: yt-summarizer-net
     external: false
