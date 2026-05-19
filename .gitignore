@@ -281,4 +281,7 @@ nginx/static_files
 nginx/media_files
 experiments/
 logs/
+
+.ec2-ssh-connection.txt
+debian-aws.pem
 # End of https://www.toptal.com/developers/gitignore/api/python,django,visualstudiocode
