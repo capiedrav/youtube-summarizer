@@ -11,7 +11,13 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import os
+import environ
+
+env = environ.Env( # read environment variables
+    DJANGO_DEBUG = (bool, False), # default value of DEBUG,
+    ALLOWED_HOSTS = (list, []),
+    CSRF_TRUSTED_ORIGINS = (list, []),
+)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,14 +27,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-# settings for production
-ALLOWED_HOSTS = ["youtube-summarizer.capiedrav.com", ]
-CSRF_TRUSTED_ORIGINS = ["https://youtube-summarizer.capiedrav.com", ]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
+
+# ALLOWED_HOSTS = ["youtube-summarizer.capiedrav.com", ]
+# CSRF_TRUSTED_ORIGINS = ["https://youtube-summarizer.capiedrav.com", ]
 
 # Application definition
 
@@ -85,24 +93,28 @@ WSGI_APPLICATION = 'project_config.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    # settings for sqlite database for production
-    # according to: https://alldjango.com/articles/definitive-guide-to-using-django-sqlite-in-production
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "../db/site.sqlite3",
-        "OPTIONS": {
-            "transaction_mode": "IMMEDIATE",
-            "timeout": 5,  # seconds
-            "init_command": """
-                PRAGMA journal_mode=WAL;
-                PRAGMA synchronous=NORMAL;
-                PRAGMA mmap_size=134217728;
-                PRAGMA journal_size_limit=27103364;
-                PRAGMA cache_size=2000;
-            """,
-        },
-    },
+    "default": env.db("DATABASE_URL", default='sqlite:///db.sqlite3')
 }
+
+# DATABASES = {
+#     # settings for sqlite database for production
+#     # according to: https://alldjango.com/articles/definitive-guide-to-using-django-sqlite-in-production
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "../db/site.sqlite3",
+#         "OPTIONS": {
+#             "transaction_mode": "IMMEDIATE",
+#             "timeout": 5,  # seconds
+#             "init_command": """
+#                 PRAGMA journal_mode=WAL;
+#                 PRAGMA synchronous=NORMAL;
+#                 PRAGMA mmap_size=134217728;
+#                 PRAGMA journal_size_limit=27103364;
+#                 PRAGMA cache_size=2000;
+#             """,
+#         },
+#     },
+# }
 
 
 # Password validation
@@ -142,7 +154,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-STATIC_ROOT = BASE_DIR / "../nginx/static"
+STATIC_ROOT = BASE_DIR / "../nginx/static_files"
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
@@ -150,7 +162,7 @@ STATICFILES_FINDERS = [
 
 # media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "../nginx/media"
+MEDIA_ROOT = BASE_DIR / "../nginx/media_files"
 THUMBNAILS_PATH = MEDIA_ROOT / 'thumbnails' # thumbnails path
 
 # Default primary key field type
@@ -164,8 +176,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 CRISPY_FAIL_SILENTLY = not DEBUG
 
 # django_recaptcha settings
-RECAPTCHA_PUBLIC_KEY = os.environ.get("DJANGO_RECAPTCHA_PUBLIC_KEY", default="no key")
-RECAPTCHA_PRIVATE_KEY = os.environ.get("DJANGO_RECAPTCHA_PRIVATE_KEY", default="no key")
+RECAPTCHA_PUBLIC_KEY = env("DJANGO_RECAPTCHA_PUBLIC_KEY", default="no key")
+RECAPTCHA_PRIVATE_KEY = env("DJANGO_RECAPTCHA_PRIVATE_KEY", default="no key")
 RECAPTCHA_REQUIRED_SCORE = 0.85
 
 # config logging
@@ -198,5 +210,5 @@ LOGGING = {
 }
 
 # celery settings
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", default='redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", default='redis://redis:6379/0')
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default='redis://redis:6379/0')
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default='redis://redis:6379/0')

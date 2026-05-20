@@ -8,14 +8,17 @@ import requests
 from django.conf import settings
 import logging
 import shutil
-import os
+import environ
+
+
+env = environ.Env() # read environment variables
 
 logger = logging.getLogger(__name__)
 
 # proxy provided by dataimpulse
-proxy_username = os.getenv("PROXY_USERNAME", default="no_username")
-proxy_password = os.getenv("PROXY_PASSWORD", default="no_password")
-proxy_port = os.getenv("PROXY_PORT", default="8080")
+proxy_username = env("PROXY_USERNAME", default="no_username")
+proxy_password = env("PROXY_PASSWORD", default="no_password")
+proxy_port = env("PROXY_PORT", default="8080")
 proxies = { # proxies urls
     "http": f"http://{proxy_username}:{proxy_password}@gw.dataimpulse.com:{proxy_port}",
     "https": f"http://{proxy_username}:{proxy_password}@gw.dataimpulse.com:{proxy_port}",

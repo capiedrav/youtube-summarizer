@@ -16,7 +16,7 @@ RUN adduser --disabled-password --no-create-home app-user
 COPY ./source ./source
 
 # create folder for prod database, for files-volume (nginx), and for logs
-RUN mkdir -p ./db ./nginx ./logs
+#RUN mkdir -p ./db ./nginx ./logs
 
 
 # change ownership and permissions of the files
