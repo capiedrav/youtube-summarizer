@@ -79,7 +79,8 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/yt-summarizer
           tags: |
-            type=sha # automatically outputs standard 7-char short SHA from commit
+            # automatically outputs standard 7-char short SHA from commit
+            type=sha 
             type=raw,value=latest
 
       - name: build and push Docker image
