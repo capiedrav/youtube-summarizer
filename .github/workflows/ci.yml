@@ -3,9 +3,12 @@
 name: CI
 
 on:
-  # this workflow runs on pull_request to main branch
+  # this workflow runs on pull_request/push to main branch
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+
 
 concurrency: # abort jobs if new code arrives to the same pull request
   group: ci-${{ github.event.pull_request.number }}
@@ -67,8 +70,8 @@ jobs:
           results-file: test_results.txt
 
       # NOTE: for here on, all steps must test for success() to prevent execution if tests failed
-      - name: prepare tags for docker image (if tests pass)
-        if: success() # <-- Crucial: prevents execution of this step if the tests failed
+      - name: prepare tags for docker image (if tests pass AND push to main branch)
+        if: success() && github.event_name == 'push' # <-- Crucial: prevents execution of this step if the tests failed
         id: image_tags
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
@@ -79,8 +82,8 @@ jobs:
             # also add 'latest' tag
             type=raw,value=latest
 
-      - name: push Image to GHCR (if tests pass)
-        if: success() # <-- Crucial: Prevents pushing if the tests failed
+      - name: push Image to GHCR (if tests pass AND push to main branch)
+        if: success() && github.event_name == 'push' # <-- Crucial: Prevents pushing if the tests failed
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf #v7.2.0
         with:
           context: .
