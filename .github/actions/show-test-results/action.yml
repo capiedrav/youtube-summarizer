@@ -1,0 +1,36 @@
+name: show test results
+description: shows Django test results in a job summary
+
+inputs:
+  results-file:
+    description: file containing the results of a test (e.g. python manage.py test -v 2 > test_results.txt 2>1&)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: show test results in job summary
+      run: |
+        {
+          file_path="${{ github.workspace }}/${{ inputs.results-file }}"
+          
+          if [ ! -f "$file_path" ]; then
+            echo "::error::Test results file not found at $file_path"
+            exit 1
+          fi
+        
+          echo "## 📋 Test Results" 
+          # 1. High-level Summary Block (Last 5 lines of the output)          
+          echo "\`\`\`txt" 
+          tail -n 5 "$file_path"
+          echo "\`\`\`" 
+
+          # 2. Detailed Expandable Accordion (Every single test result)
+          echo "🔍 <details><summary>Click detailed test results</summary>" 
+          echo "" 
+          echo "\`\`\`txt" 
+          cat "$file_path" 
+          echo "\`\`\`" 
+          echo "</details>" 
+        } >> "$GITHUB_STEP_SUMMARY"
+      shell: bash
