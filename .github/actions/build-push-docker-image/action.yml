@@ -1,0 +1,71 @@
+name: build-push-docker-image
+
+description: build and/or push a docker image depending on inputs
+
+inputs:
+  image-name:
+    description: name of the docker image
+    required: true
+  registry:
+    description: registry where to push the image
+    required: false
+    default: ghcr.io # GitHub Container Registry
+  push-image:
+    description: whether to push the image to the registry
+    required: false
+    default: 'false'
+  password:
+    description: password used to login to container registry
+    required: false
+    default: 'no_password'
+
+runs:
+  using: composite
+
+  steps:
+    - name: Login to registry
+      if: inputs.push-image == 'true'
+      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee #v4.2.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.password }}
+
+    - name: set up Docker Buildx
+      uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 #v4.1.0
+
+    - name: build and load docker image
+      if: inputs.push-image == 'false'
+      uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf #v7.2.0
+      with:
+        context: .
+        push: false # do not push the image
+        load: true # make the image available to the runner's docker engine
+        tags: |
+          ${{inputs.image-name}}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: add tags for docker image
+      if: inputs.push-image == 'true'
+      id: image_tags
+      uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+      with:
+        images: ${{inputs.registry}}/${{inputs.image-name}}
+        tags: |
+          # automatically outputs standard 7-char short SHA from commit
+          type=sha
+          # also add 'latest' tag
+          type=raw,value=latest
+
+    - name: push image to registry
+      id: registry-image
+      if: inputs.push-image == 'true'
+      uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf #v7.2.0
+      with:
+        context: .
+        push: true # push image to registry
+        tags: |
+          ${{ steps.image_tags.outputs.tags }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
