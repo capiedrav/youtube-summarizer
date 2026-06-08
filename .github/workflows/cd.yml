@@ -1,0 +1,30 @@
+# workflow to deploy code to staging and production
+
+name: cd.yml
+on:
+  # this workflow runs on push to main branch
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # necessary to push image to GHCR
+
+    env:
+      IMAGE: ${{github.repository}}
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: build docker image and push it to GHCR
+        uses: ./.github/actions/build-push-docker-image
+        with:
+          image-name: ${{env.IMAGE}}
+          push-image: 'true'
+          registry: ghcr.io
+          password: ${{github.token}}
+
