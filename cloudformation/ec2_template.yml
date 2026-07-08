@@ -1,11 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Template 3 of 3: Main EC2 Compute with streamlined external UserData script'
+Description: 'Template 3 of 3: EC2 instance with /, /home and swap partitions'
 
 Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access.
     Type: AWS::EC2::KeyPair::KeyName
-    Default: debian-aws.pem
 
   LatestDebian12AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
@@ -13,16 +12,16 @@ Parameters:
 
   VpcStackName:
     Type: String
-    Default: staging-vpc-stack
+    Default: staging-vpc
 
   SgStackName:
     Type: String
-    Default: cloudflare-security-stack
+    Default: sg-stack
 
   S3ScriptBucket:
     Type: String
-    Description: The S3 bucket name where init-script.sh is hosted (e.g., your-configuration-bucket)
-    Default: your-configuration-bucket
+    Description: The S3 bucket name where init_script.sh is hosted
+    Default: your-bucket
 
 Resources:
   # --- IAM Role allowing EC2 to read the script from S3 ---
@@ -43,7 +42,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: ['s3:GetObject']
-                Resource: !Sub "arn:aws:s3:::${S3ScriptBucket}/init-script.sh"
+                Resource: !Sub "arn:aws:s3:::${S3ScriptBucket}/init_script.sh"
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -64,61 +63,49 @@ Resources:
               ca-certificates: []
               gnupg: []
     Properties:
-      InstanceType: t2.micro
+      InstanceType: t3.micro
       ImageId: !Ref LatestDebian12AMI
       KeyName: !Ref KeyName
       IamInstanceProfile: !Ref InstanceProfile
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: '0'
-          SubnetId: !ImportValue !Sub "${VpcStackName}-PublicSubnetId"
+          SubnetId:
+            Fn::ImportValue:
+              Fn::Sub: "${VpcStackName}-PublicSubnetId"
           GroupSet:
-            - !ImportValue !Sub "${SgStackName}-CloudflareSecurityGroupId"
+            - Fn::ImportValue:
+                Fn::Sub: "${SgStackName}-CloudflareSecurityGroupId"
+
+      # All 3 volumes mapped cleanly inside the instance layout
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
             VolumeSize: 14
             VolumeType: gp3
             DeleteOnTermination: true
+        - DeviceName: /dev/xvdb
+          Ebs:
+            VolumeSize: 14
+            VolumeType: gp3
+            DeleteOnTermination: true # Change to false if you want data to survive template destruction
+        - DeviceName: /dev/xvdc
+          Ebs:
+            VolumeSize: 2
+            VolumeType: gp3
+            DeleteOnTermination: true
+
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          # Download the script from S3 and execute it with Stack Name and Region parameters
-          aws s3 cp s3://${S3ScriptBucket}/init-script.sh /tmp/init-script.sh
-          chmod +x /tmp/init-script.sh
-          /tmp/init-script.sh "${AWS::StackName}" "${AWS::Region}"
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            # Fetch script from S3 and run it immediately passing stack details
+            aws s3 cp s3://${S3ScriptBucket}/init_script.sh /tmp/init_script.sh
+            chmod +x /tmp/init_script.sh
+            /tmp/init_script.sh "${AWS::StackName}" "${AWS::Region}"
     CreationPolicy:
       ResourceSignal:
         Timeout: PT10M
-
-  # --- Storage ---
-  HomeVolume:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 14
-      VolumeType: gp3
-      AvailabilityZone: !GetAtt DebianInstance.AvailabilityZone
-
-  SwapVolume:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 2
-      VolumeType: gp3
-      AvailabilityZone: !GetAtt DebianInstance.AvailabilityZone
-
-  MountHomeAttachment:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      InstanceId: !Ref DebianInstance
-      VolumeId: !Ref HomeVolume
-      Device: /dev/xvdb
-
-  MountSwapAttachment:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      InstanceId: !Ref DebianInstance
-      VolumeId: !Ref SwapVolume
-      Device: /dev/xvdc
 
 Outputs:
   InstancePublicIp:

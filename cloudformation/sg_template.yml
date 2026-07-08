@@ -5,7 +5,7 @@ Description: 'Template 2 of 3: Cloudflare Prefix List and Security Group Setup'
 Parameters:
   VpcStackName:
     Type: String
-    Default: staging-vpc-stack
+    Default: staging-vpc
 
 Resources:
   CloudflareIpPrefixList:
@@ -35,7 +35,9 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow inbound HTTPS from Cloudflare Prefix List and SSH globally
-      VpcId: !ImportValue !Sub "${VpcStackName}-VpcId" # <-- Linked here
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${VpcStackName}-VpcId"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
