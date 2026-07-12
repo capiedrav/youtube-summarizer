@@ -35,6 +35,10 @@ Resources:
             Principal:
               Service: [ec2.amazonaws.com]
             Action: ['sts:AssumeRole']
+      # allows ssm connection to the ec2 instance
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      # allows reading init_script.sh stored in s3 bucket
       Policies:
         - PolicyName: S3ScriptReadPolicy
           PolicyDocument:
@@ -67,6 +71,9 @@ Resources:
       ImageId: !Ref LatestDebian12AMI
       KeyName: !Ref KeyName
       IamInstanceProfile: !Ref InstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-debian"
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: '0'
@@ -111,3 +118,6 @@ Outputs:
   InstancePublicIp:
     Description: Public IP of the Debian Instance
     Value: !GetAtt DebianInstance.PublicIp
+  InstanceId:
+    Description: The ID of the EC2 Instance (Useful for SSM Connections)
+    Value: !Ref DebianInstance
