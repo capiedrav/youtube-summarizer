@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Template 3 of 3: EC2 instance with /, /home and swap partitions'
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access.
+    Type: AWS::EC2::KeyPair::KeyName
+
+  LatestDebian12AMI:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/debian/release/12/latest/amd64'
+
+  VpcStackName:
+    Type: String
+    Default: staging-vpc
+
+  SgStackName:
+    Type: String
+    Default: sg-stack
+
+  S3ScriptBucket:
+    Type: String
+    Description: The S3 bucket name where init_script.sh is hosted
+    Default: your-bucket
+
+Resources:
+  # --- IAM Role allowing EC2 to read the script from S3 ---
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      # allows ssm connection to the ec2 instance
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      # allows reading init_script.sh stored in s3 bucket
+      Policies:
+        - PolicyName: S3ScriptReadPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ['s3:GetObject']
+                Resource: !Sub "arn:aws:s3:::${S3ScriptBucket}/init_script.sh"
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  # --- EC2 Instance ---
+  DebianInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            apt:
+              git: []
+              curl: []
+              ca-certificates: []
+              gnupg: []
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref LatestDebian12AMI
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref InstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-debian"
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: '0'
+          SubnetId:
+            Fn::ImportValue:
+              Fn::Sub: "${VpcStackName}-PublicSubnetId"
+          GroupSet:
+            - Fn::ImportValue:
+                Fn::Sub: "${SgStackName}-CloudflareSecurityGroupId"
+
+      # All 3 volumes mapped cleanly inside the instance layout
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 14
+            VolumeType: gp3
+            DeleteOnTermination: true
+        - DeviceName: /dev/xvdb
+          Ebs:
+            VolumeSize: 14
+            VolumeType: gp3
+            DeleteOnTermination: true # Change to false if you want data to survive template destruction
+        - DeviceName: /dev/xvdc
+          Ebs:
+            VolumeSize: 2
+            VolumeType: gp3
+            DeleteOnTermination: true
+
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            # Fetch script from S3 and run it immediately passing stack details
+            aws s3 cp s3://${S3ScriptBucket}/init_script.sh /tmp/init_script.sh
+            chmod +x /tmp/init_script.sh
+            /tmp/init_script.sh "${AWS::StackName}" "${AWS::Region}"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT10M
+
+Outputs:
+  InstancePublicIp:
+    Description: Public IP of the Debian Instance
+    Value: !GetAtt DebianInstance.PublicIp
+  InstanceId:
+    Description: The ID of the EC2 Instance (Useful for SSM Connections)
+    Value: !Ref DebianInstance
