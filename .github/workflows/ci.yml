@@ -46,9 +46,9 @@ jobs:
             docker_files:
               - 'Dockerfile'
 
-  build-and-test:
+  build-and-run-unit-tests: # runs if changes in source code or docker files
     needs: check-for-changes
-    if: ${{ needs.check-for-changes.outputs.source == 'true' }} # runs if changes in source code
+    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.docker_files == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -81,3 +81,24 @@ jobs:
         uses: ./.github/actions/show-test-results
         with:
           results-file: test_results.txt
+
+  build-nginx:
+    needs: check-for-changes
+    if: ${{ needs.check-for-changes.outputs.nginx_config == 'true' }} # runs if changes in nginx config files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      IMAGE: ${{github.repository}}-nginx
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: build nginx docker image
+        uses: ./.github/actions/build-push-docker-image
+        with:
+          image-name: ${{env.IMAGE}}
+          context: './nginx'
+          push-image: 'false'
