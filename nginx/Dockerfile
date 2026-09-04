@@ -14,3 +14,4 @@ RUN chmod -R 557 .
 
 # switch back to nginx user
 USER nginx
+

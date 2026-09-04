@@ -6,6 +6,10 @@ inputs:
   image-name:
     description: name of the docker image
     required: true
+  context:
+    description: path to Dockerfile
+    required: false
+    default: '.'
   registry:
     description: registry where to push the image
     required: false
@@ -38,7 +42,7 @@ runs:
       if: inputs.push-image == 'false'
       uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf #v7.2.0
       with:
-        context: .
+        context: ${{inputs.context}}
         push: false # do not push the image
         load: true # make the image available to the runner's docker engine
         tags: |
@@ -63,7 +67,7 @@ runs:
       if: inputs.push-image == 'true'
       uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf #v7.2.0
       with:
-        context: .
+        context: ${{inputs.context}}
         push: true # push image to registry
         tags: |
           ${{ steps.image_tags.outputs.tags }}

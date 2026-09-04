@@ -1,13 +1,47 @@
 # workflow to deploy code to staging and production
 
-name: cd.yml
+name: CD workflow
 on:
   # this workflow runs on push to main branch
   push:
     branches: [main]
 
 jobs:
+  check-for-changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      contents: read
+      pull-requests: write
+
+    # Set job outputs to values from filter step
+    outputs:
+      source: ${{steps.files_checker.outputs.source}}
+      nginx_config: ${{steps.files_checker.outputs.nginx_config}}
+      docker_files: ${{steps.files_checker.outputs.docker_files}}
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: run actionlint action
+        uses: devops-actions/actionlint@9fb9c192862f19e684586ca84b500461bcd8a541 #v0.1.12
+
+      - name: check for changes in source code
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: files_checker
+        with:
+          filters: |
+            source:
+              - 'source/**'
+            nginx_config:
+              - 'nginx/**'
+            docker_files:
+              - 'Dockerfile'
+
   build-and-push-image:
+    needs: check-for-changes
+    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.docker_files == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,3 +62,25 @@ jobs:
           registry: ghcr.io
           password: ${{github.token}}
 
+  build-and-push-nginx-image:
+    needs: check-for-changes
+#    if: ${{ needs.check-for-changes.outputs.nginx_config == 'true' }} # runs if changes in nginx config files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      IMAGE: ${{github.repository}}-nginx
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: build and push nginx docker image
+        uses: ./.github/actions/build-push-docker-image
+        with:
+          image-name: ${{env.IMAGE}}
+          context: './nginx'
+          push-image: 'true'
+          registry: ghcr.io
+          password: ${{github.token}}
