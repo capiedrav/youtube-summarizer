@@ -68,6 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write # necessary to push image to GHCR
 
     env:
       IMAGE: ${{github.repository}}-nginx
