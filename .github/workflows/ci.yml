@@ -84,7 +84,7 @@ jobs:
 
   build-nginx:
     needs: check-for-changes
-    if: ${{ needs.check-for-changes.outputs.nginx_config == 'true' }} # runs if changes in nginx config files
+    if: needs.check-for-changes.outputs.nginx_config == 'true' # runs if changes in nginx config files
     runs-on: ubuntu-latest
     permissions:
       contents: read
