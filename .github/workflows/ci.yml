@@ -1,6 +1,6 @@
 # workflow to run CI tests before accepting pull requests in main branch
 
-name: CI
+name: CI workflow
 
 on:
   # this workflow runs on pull_request to main branch and on workflow_dispatch on any branch
