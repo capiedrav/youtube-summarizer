@@ -1,0 +1,50 @@
+services:
+  web:
+    build: .
+
+    ports:
+      - 8000:8000
+
+    volumes:
+      - ./source:/app/source # source code
+      - ./nginx:/app/nginx:ro # collect static and media files (read-only)
+      - ./logs:/app/logs # collect app logs
+
+    env_file: "./.env"
+
+    networks:
+      - yt-net-dev
+
+    command: |
+      python manage.py runserver 0.0.0.0:8000
+
+    container_name: yt-web-dev
+
+  redis:
+    networks:
+      - yt-net-dev
+
+    container_name: yt-redis-dev
+
+  celery:
+    build: . # uses the same Dockerfile as web service
+
+    volumes: # uses the same volumes as web service
+      - ./source:/app/source
+      - ./nginx:/app/nginx
+      - ./logs:/app/logs
+
+    env_file: "./.env"
+
+    command: |
+      celery -A project_config.celery worker -l INFO
+
+    networks:
+      - yt-net-dev
+
+    container_name: yt-celery-dev
+
+networks:
+  yt-net-dev:
+    name: yt-net-dev
+    external: false
