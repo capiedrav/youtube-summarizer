@@ -1,58 +1,11 @@
 services:
   web:
-    build: .
-
-    ports:
-      - 8000:8000
-
-    volumes:
-      - ./source:/app/source # source code
-      - ./nginx:/app/nginx:ro # collect static and media files (read-only)
-      - ./logs:/app/logs # collect app logs
-
-    env_file: "./.env"
-
     depends_on:
       - redis
-
-    networks:
-      - yt-summarizer-net
-
-    command: |
-      python manage.py runserver 0.0.0.0:8000
-
-    container_name: yt-summarizer
 
   redis:
     image: redis:7.0.11-alpine
 
-    networks:
-      - yt-summarizer-net
-
-    container_name: yt-summarizer-redis
-
   celery:
-    build: . # uses the same Dockerfile as web service
-
-    volumes: # uses the same volumes as web service
-      - ./source:/app/source
-      - ./nginx:/app/nginx
-      - ./logs:/app/logs
-
-    env_file: "./.env"
-
-    command: |
-      celery -A project_config.celery worker -l INFO
-
     depends_on:
       - redis
-
-    networks:
-      - yt-summarizer-net
-
-    container_name: yt-summarizer-celery
-
-networks:
-  yt-summarizer-net:
-    name: yt-summarizer-net
-    external: false
