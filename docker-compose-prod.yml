@@ -74,7 +74,7 @@ services:
     container_name: yt-celery-prod
 
   cloudflare_tunnel:
-    image: cloudflare/cloudflared:1449-569a7c3c9ed0
+    image: cloudflare/cloudflared:2026.10.3
 
     env_file:
       - "./.env"
