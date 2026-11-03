@@ -1,0 +1,99 @@
+services:
+  web:
+    build: .
+
+    volumes:
+      - db-volume-prod:/app/db # this volume is shared with celery container
+      - files-volume-prod:/app/nginx # this volume is shared with nginx server
+      - logs-volume-prod:/app/logs # this volume is shared with celery container
+
+    env_file: "./.env"
+
+    networks:
+      - yt-net-prod
+
+    command: >
+      sh -c "python manage.py migrate &&
+             # remove default nginx html files
+             rm -f /app/nginx/*.html &&
+             # collect static files (creates STATIC_ROOT path if not already exits)
+             python manage.py collectstatic --no-input &&
+             # create folder for media files if not already exist
+             mkdir -p /app/nginx/media_files/thumbnails &&
+             # start django app 
+             gunicorn -c ./project_config/gunicorn.py"
+
+    restart: unless-stopped
+
+    container_name: yt-web-prod
+
+  nginx:
+    build: ./nginx
+
+    volumes:
+      # this volume is shared with django and celery containers (read-only)
+      - files-volume-prod:/usr/share/nginx/html:ro
+
+    depends_on:
+      - web
+
+    networks:
+      - yt-net-prod
+
+    restart: unless-stopped
+
+    container_name: yt-nginx-prod
+
+  redis:
+    networks:
+      - yt-net-prod
+
+    restart: unless-stopped
+
+    container_name: yt-redis-prod
+
+  celery:
+    build: . # uses the same Dockerfile as web service
+
+    volumes: # uses the same volumes as web service
+      - db-volume-prod:/app/db
+      - files-volume-prod:/app/nginx
+      - logs-volume-prod:/app/logs
+
+    env_file:
+      - "./.env"
+
+    command: |
+      celery -A project_config.celery worker -l INFO
+
+    networks:
+      - yt-net-prod
+
+    restart: unless-stopped
+
+    container_name: yt-celery-prod
+
+  cloudflare_tunnel:
+    image: cloudflare/cloudflared:2026.10.3
+
+    env_file:
+      - "./.env"
+
+    command: tunnel --no-autoupdate run
+
+    networks:
+      - yt-net-prod
+
+    restart: unless-stopped
+
+    container_name: yt-tunnel-prod
+
+volumes:
+  db-volume-prod:
+  files-volume-prod:
+  logs-volume-prod:
+
+networks:
+  yt-net-prod:
+    name: yt-net-prod
+    external: false

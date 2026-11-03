@@ -15,8 +15,8 @@ import environ
 
 env = environ.Env( # read environment variables
     DJANGO_DEBUG = (bool, False), # default value of DEBUG,
-    ALLOWED_HOSTS = (list, []),
-    CSRF_TRUSTED_ORIGINS = (list, []),
+    DJANGO_ALLOWED_HOSTS = (list, []),
+    DJANGO_CSRF_TRUSTED_ORIGINS = (list, []),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -32,11 +32,8 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
-
-# ALLOWED_HOSTS = ["youtube-summarizer.capiedrav.com", ]
-# CSRF_TRUSTED_ORIGINS = ["https://youtube-summarizer.capiedrav.com", ]
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 # Application definition
 
@@ -95,27 +92,18 @@ WSGI_APPLICATION = 'project_config.wsgi.application'
 DATABASES = {
     "default": env.db("DATABASE_URL", default='sqlite:///db.sqlite3')
 }
-
-# DATABASES = {
-#     # settings for sqlite database for production
-#     # according to: https://alldjango.com/articles/definitive-guide-to-using-django-sqlite-in-production
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "../db/site.sqlite3",
-#         "OPTIONS": {
-#             "transaction_mode": "IMMEDIATE",
-#             "timeout": 5,  # seconds
-#             "init_command": """
-#                 PRAGMA journal_mode=WAL;
-#                 PRAGMA synchronous=NORMAL;
-#                 PRAGMA mmap_size=134217728;
-#                 PRAGMA journal_size_limit=27103364;
-#                 PRAGMA cache_size=2000;
-#             """,
-#         },
-#     },
-# }
-
+if not DEBUG: # apply db optimizations only in staging or prod
+    DATABASES["default"]["OPTIONS"] = {
+        "transaction_mode": "IMMEDIATE",
+        "timeout": 5,
+        "init_command": """
+            PRAGMA journal_mode=WAL;
+            PRAGMA synchronous=NORMAL;
+            PRAGMA mmap_size=134217728;
+            PRAGMA journal_size_limit=27103364;
+            PRAGMA cache_size=2000;
+        """,
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
