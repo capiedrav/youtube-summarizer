@@ -102,7 +102,7 @@ def get_video_text(video_id: str) -> str:
 
 def get_video_title(youtube_url: str) -> str | None:
 
-    yt = YouTube(url=youtube_url, proxies=proxies)
+    yt = YouTube(url=youtube_url, proxies=proxies, client="WEB")
     return _try_three_times(lambda: yt.title) # wrap title property in a lambda function to avoid immediate evaluation
 
 def _get_thumbnail_url(youtube_url: str) -> str:
@@ -116,7 +116,7 @@ def _get_thumbnail_url(youtube_url: str) -> str:
         (str) thumbnail url.
     """
 
-    yt = YouTube(url=youtube_url, proxies=proxies)
+    yt = YouTube(url=youtube_url, proxies=proxies, client="WEB")
     return _try_three_times(lambda: yt.thumbnail_url) # wrap thumbnail_url property in a lambda function to
                                                       # avoid immediate evaluation
 
