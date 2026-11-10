@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# install dependencies
+RUN apt update -y && apt install nodejs npm -y # install node for pytubefix package
+COPY ./requirements.txt .
+RUN pip install --no-cache -r requirements.txt
+
+# create non-root user   
+RUN adduser --disabled-password --no-create-home app-user
+
+# copy source code
+COPY ./source ./source
+
+# create folder for prod database, for files-volume (nginx), and for logs
+RUN mkdir -p ./db ./nginx ./logs
+
+
+# change ownership and permissions of the files
+RUN chown -R app-user:users . && chmod 755 -R .
+
+# move to source directory
+WORKDIR /app/source
+
+# switch to app-user
+USER app-user
