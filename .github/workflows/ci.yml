@@ -25,7 +25,8 @@ jobs:
     outputs:
       source: ${{steps.files_checker.outputs.source}}
       nginx_config: ${{steps.files_checker.outputs.nginx_config}}
-      docker_files: ${{steps.files_checker.outputs.docker_files}}
+      dockerfile-web: ${{steps.files_checker.outputs.dockerfile-web}}
+      dockerfile-ai: ${{steps.files_checker.outputs.dockerfile-ai}}
 
     steps:
       - name: checkout repository
@@ -43,12 +44,14 @@ jobs:
               - 'source/**'
             nginx_config:
               - 'nginx/**'
-            docker_files:
+            dockerfile-web: # Dockerfile for django container
               - 'Dockerfile'
+            dockerfile-ai: # Dockerfile for ai tasks (celery, langchain, etc.)
+              - 'Dockerfile-ai
 
   build-and-run-unit-tests: # runs if changes in source code or docker files
     needs: check-for-changes
-    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.docker_files == 'true'
+    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.dockerfile-web == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,10 +63,10 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: build docker image
+      - name: build Dockerfile image (Django)
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
+          image-name: ${{env.IMAGE}}-web
           push-image: 'false'
 
       - name: create logs folder (necessary to run unit tests)
@@ -81,6 +84,13 @@ jobs:
         uses: ./.github/actions/show-test-results
         with:
           results-file: test_results.txt
+
+      - name: build Dockerfile-ai image
+        uses: ./.github/actions/build-push-docker-image
+        with:
+          image-name: ${{env.IMAGE}}-ai
+          file: Dockerfile-ai
+          push-image: 'false'
 
   build-nginx:
     needs: check-for-changes
