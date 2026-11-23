@@ -40,7 +40,7 @@ jobs:
             dockerfile-web: # Dockerfile for django container
               - 'Dockerfile'
             dockerfile-ai: # Dockerfile for ai tasks (celery, langchain, etc.)
-              - 'Dockerfile-ai
+              - 'Dockerfile-ai'
 
   build-and-push-web-image:
     needs: check-for-changes

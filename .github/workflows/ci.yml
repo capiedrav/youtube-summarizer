@@ -47,7 +47,7 @@ jobs:
             dockerfile-web: # Dockerfile for django container
               - 'Dockerfile'
             dockerfile-ai: # Dockerfile for ai tasks (celery, langchain, etc.)
-              - 'Dockerfile-ai
+              - 'Dockerfile-ai'
 
   build-and-run-unit-tests: # runs if changes in source code or docker files
     needs: check-for-changes
