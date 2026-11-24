@@ -107,8 +107,8 @@ jobs:
           image-name: ${{env.IMAGE}}-ai
           file: Dockerfile-ai
           push-image: 'false'
-          build-contexts: |
-            # point to the image created in the last step
+          # point to the image created in the last step
+          build-contexts: |            
             youtube-summarizer-web=docker-image://youtube-summarizer-web
 
   build-nginx:

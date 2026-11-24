@@ -74,8 +74,8 @@ jobs:
           image-name: ${{env.IMAGE}}-ai
           file: 'Dockerfile-ai'
           push-image: 'true'
-          build-contexts: |
-            # point to the image created in the last step
+          # point to the image created in the last step
+          build-contexts: |            
             youtube-summarizer-web=docker-image://youtube-summarizer-web
           registry: ghcr.io
           password: ${{github.token}}
