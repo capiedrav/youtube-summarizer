@@ -14,6 +14,10 @@ inputs:
     description: name of Dockerfile
     required: false
     default: Dockerfile
+  build-contexts:
+    description: list of additional build contexts
+    required: false
+    default: ''
   registry:
     description: registry where to push the image
     required: false
@@ -50,6 +54,7 @@ runs:
         file: ${{inputs.file}}
         push: false # do not push the image
         load: true # make the image available to the runner's docker engine
+        build-contexts: ${{inputs.build-contexts}}
         tags: |
           ${{inputs.image-name}}
         cache-from: type=gha
@@ -60,7 +65,7 @@ runs:
       id: image_tags
       uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
       with:
-        images: ${{inputs.registry}}/${{inputs.image-name}}
+        images: ${{inputs.registry}}/${{github.repository_owner}}/${{inputs.image-name}}
         tags: |
           # automatically outputs standard 7-char short SHA from commit
           type=sha
@@ -75,6 +80,8 @@ runs:
         context: ${{inputs.context}}
         file: ${{inputs.file}}
         push: true # push image to registry
+        load: true
+        build-contexts: ${{inputs.build-contexts}}
         tags: |
           ${{ steps.image_tags.outputs.tags }}
         cache-from: type=gha

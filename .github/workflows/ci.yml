@@ -69,7 +69,7 @@ jobs:
       - name: extract image name from repository name
         run: |
           IMAGE="${GITHUB_REPOSITORY#*/}"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"          
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: checkout repository
         if: env.RUN_UNIT_TESTS == 'true'
@@ -107,6 +107,9 @@ jobs:
           image-name: ${{env.IMAGE}}-ai
           file: Dockerfile-ai
           push-image: 'false'
+          build-contexts: |
+            # point to the image created in the last step
+            youtube-summarizer-web=docker-image://youtube-summarizer-web
 
   build-nginx:
     needs: check-for-changes
