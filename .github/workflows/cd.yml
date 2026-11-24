@@ -42,72 +42,44 @@ jobs:
             dockerfile-ai: # Dockerfile for ai tasks (celery, langchain, etc.)
               - 'Dockerfile-ai'
 
-  build-and-push-web-image:
+  build-and-push-images:
     needs: check-for-changes
-    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.dockerfile-web == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write # necessary to push image to GHCR
 
     env:
-      IMAGE: ${{github.repository}}-web
+      IMAGE: ${{github.repository}}
 
     steps:
       - name: checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: build docker image and push it to GHCR
+      - name: build web image and push it to GHCR
+        if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.dockerfile-web == 'true'
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
+          image-name: ${{env.IMAGE}}-web
           push-image: 'true'
           registry: ghcr.io
           password: ${{github.token}}
 
-  build-and-push-ai-image:
-    needs: check-for-changes
-    if: needs.check-for-changes.outputs.dockerfile-ai == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write # necessary to push image to GHCR
-
-    env:
-      IMAGE: ${{github.repository}}-ai
-
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: build docker image and push it to GHCR
+      - name: build ai image and push it to GHCR
+        if: needs.check-for-changes.outputs.dockerfile-ai == 'true'
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
-          file: Dockerfile-ai
+          image-name: ${{env.IMAGE}}-ai
+          file: 'Dockerfile-ai'
           push-image: 'true'
           registry: ghcr.io
           password: ${{github.token}}
 
-  build-and-push-nginx-image:
-    needs: check-for-changes
-    if: needs.check-for-changes.outputs.nginx_config == 'true' # runs if changes in nginx config files
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write # necessary to push image to GHCR
-
-    env:
-      IMAGE: ${{github.repository}}-nginx
-
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: build and push nginx docker image
+      - name: build nginx image and push it to GHCR
+        if: needs.check-for-changes.outputs.nginx_config == 'true' # runs if changes in nginx config files
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
+          image-name: ${{env.IMAGE}}-nginx
           context: './nginx'
           push-image: 'true'
           registry: ghcr.io

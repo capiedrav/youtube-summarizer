@@ -51,7 +51,6 @@ jobs:
 
   build-and-run-unit-tests: # runs if changes in source code or docker files
     needs: check-for-changes
-    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.dockerfile-web == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,32 +59,48 @@ jobs:
       IMAGE: ${{github.repository}}
 
     steps:
+      - name: Check for changes
+        run: |
+          if [[ "${{needs.check-for-changes.outputs.source}}" == "true" ||
+                "${{needs.check-for-changes.outputs.dockerfile-web}}" ]]; then
+            echo "RUN_UNIT_TESTS=true" >> $GITHUB_ENV
+          fi
+          
+          if [[ "${{needs.check-for-changes.outputs.dockerfile-ai}}" == "true" ]]; then
+            echo "BUILD_DOCKERFILE_AI=true" >> $GITHUB_ENV
+          fi
+
       - name: checkout repository
+        if: env.RUN_UNIT_TESTS == 'true'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: build Dockerfile image (Django)
+      - name: build Dockerfile image (web)
+        if: env.RUN_UNIT_TESTS == 'true'
         uses: ./.github/actions/build-push-docker-image
         with:
           image-name: ${{env.IMAGE}}-web
           push-image: 'false'
 
       - name: create logs folder (necessary to run unit tests)
+        if: env.RUN_UNIT_TESTS == 'true'
         run: |
           mkdir -p logs
           chmod -R 777 logs      
 
       - name: run unit tests
+        if: env.RUN_UNIT_TESTS == 'true'
         run: |
           docker run --rm -e DJANGO_SECRET_KEY="${{secrets.DJANGO_SECRET_KEY}}" -v "${PWD}/logs:/app/logs" \
-          "${{env.IMAGE}}" sh -c "python manage.py test --no-input -b -v 2" > test_results.txt 2>&1
+          "${{env.IMAGE}}-web" sh -c "python manage.py test --no-input -b -v 2" > test_results.txt 2>&1
 
       - name: show test results in job summary
-        if: always() # runs even if the last step fails
+        if: env.RUN_UNIT_TESTS == 'true' && always() # runs even if the last step fails
         uses: ./.github/actions/show-test-results
         with:
           results-file: test_results.txt
 
       - name: build Dockerfile-ai image
+        if: env.BUILD_DOCKERFILE_AI == 'true'
         uses: ./.github/actions/build-push-docker-image
         with:
           image-name: ${{env.IMAGE}}-ai
