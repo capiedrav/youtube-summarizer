@@ -62,7 +62,7 @@ jobs:
       - name: Check for changes
         run: |
           if [[ "${{needs.check-for-changes.outputs.source}}" == "true" ||
-                "${{needs.check-for-changes.outputs.dockerfile-web}}" ]]; then
+                "${{needs.check-for-changes.outputs.dockerfile-web}}" == "true" ]]; then
             echo "RUN_UNIT_TESTS=true" >> $GITHUB_ENV
           fi
           
