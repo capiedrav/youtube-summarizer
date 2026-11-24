@@ -55,9 +55,6 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      IMAGE: ${{github.repository}}
-
     steps:
       - name: Check for changes
         run: |
@@ -69,6 +66,10 @@ jobs:
           if [[ "${{needs.check-for-changes.outputs.dockerfile-ai}}" == "true" ]]; then
             echo "BUILD_DOCKERFILE_AI=true" >> "$GITHUB_ENV"
           fi
+      - name: Extract image name from repository name
+        run: |
+          IMAGE="${GITHUB_REPOSITORY#*/}"
+          echo "IMAGE=$REPO_NAME" >> "$GITHUB_ENV"          
 
       - name: checkout repository
         if: env.RUN_UNIT_TESTS == 'true'
@@ -114,16 +115,18 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      IMAGE: ${{github.repository}}-nginx
-
     steps:
+      - name: Extract image name from repository name
+        run: |
+          IMAGE="${GITHUB_REPOSITORY#*/}"
+          echo "IMAGE=$REPO_NAME" >> "$GITHUB_ENV"
+
       - name: checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: build nginx docker image
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
+          image-name: ${{env.IMAGE}}-nginx
           context: './nginx'
           push-image: 'false'

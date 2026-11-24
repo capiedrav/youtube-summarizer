@@ -49,10 +49,12 @@ jobs:
       contents: read
       packages: write # necessary to push image to GHCR
 
-    env:
-      IMAGE: ${{github.repository}}
-
     steps:
+      - name: Extract image name from repository name
+        run: |
+          IMAGE="${GITHUB_REPOSITORY#*/}"
+          echo "IMAGE=$REPO_NAME" >> "$GITHUB_ENV"
+
       - name: checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
