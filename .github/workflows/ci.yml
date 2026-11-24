@@ -56,7 +56,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Check for changes
+      - name: check for changes
         run: |
           if [[ "${{needs.check-for-changes.outputs.source}}" == "true" ||
                 "${{needs.check-for-changes.outputs.dockerfile-web}}" == "true" ]]; then
@@ -66,10 +66,10 @@ jobs:
           if [[ "${{needs.check-for-changes.outputs.dockerfile-ai}}" == "true" ]]; then
             echo "BUILD_DOCKERFILE_AI=true" >> "$GITHUB_ENV"
           fi
-      - name: Extract image name from repository name
+      - name: extract image name from repository name
         run: |
           IMAGE="${GITHUB_REPOSITORY#*/}"
-          echo "IMAGE=$REPO_NAME" >> "$GITHUB_ENV"          
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"          
 
       - name: checkout repository
         if: env.RUN_UNIT_TESTS == 'true'
@@ -119,7 +119,7 @@ jobs:
       - name: Extract image name from repository name
         run: |
           IMAGE="${GITHUB_REPOSITORY#*/}"
-          echo "IMAGE=$REPO_NAME" >> "$GITHUB_ENV"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
