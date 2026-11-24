@@ -27,7 +27,9 @@ services:
     container_name: yt-redis-dev
 
   celery:
-    build: . # uses the same Dockerfile as web service
+    build:  # uses a different Dockerfile than web service
+      context: .
+      dockerfile: Dockerfile-ai
 
     volumes: # uses the same volumes as web service
       - ./source:/app/source

@@ -1,0 +1,8 @@
+FROM youtube-summarizer-web
+
+# install node.js for pytubefix package
+USER root
+RUN apt update -y && apt install nodejs npm -y
+
+# switch back to app-user
+USER app-user

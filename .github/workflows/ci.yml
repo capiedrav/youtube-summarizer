@@ -25,7 +25,8 @@ jobs:
     outputs:
       source: ${{steps.files_checker.outputs.source}}
       nginx_config: ${{steps.files_checker.outputs.nginx_config}}
-      docker_files: ${{steps.files_checker.outputs.docker_files}}
+      dockerfile-web: ${{steps.files_checker.outputs.dockerfile-web}}
+      dockerfile-ai: ${{steps.files_checker.outputs.dockerfile-ai}}
 
     steps:
       - name: checkout repository
@@ -43,44 +44,72 @@ jobs:
               - 'source/**'
             nginx_config:
               - 'nginx/**'
-            docker_files:
+            dockerfile-web: # Dockerfile for django container
               - 'Dockerfile'
+            dockerfile-ai: # Dockerfile for ai tasks (celery, langchain, etc.)
+              - 'Dockerfile-ai'
 
   build-and-run-unit-tests: # runs if changes in source code or docker files
     needs: check-for-changes
-    if: needs.check-for-changes.outputs.source == 'true' || needs.check-for-changes.outputs.docker_files == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
-    env:
-      IMAGE: ${{github.repository}}
-
     steps:
+      - name: check for changes
+        run: |
+          if [[ "${{needs.check-for-changes.outputs.source}}" == "true" ||
+                "${{needs.check-for-changes.outputs.dockerfile-web}}" == "true" ]]; then
+            echo "RUN_UNIT_TESTS=true" >> "$GITHUB_ENV"
+          fi
+          
+          if [[ "${{needs.check-for-changes.outputs.dockerfile-ai}}" == "true" ]]; then
+            echo "BUILD_DOCKERFILE_AI=true" >> "$GITHUB_ENV"
+          fi
+      - name: extract image name from repository name
+        run: |
+          IMAGE="${GITHUB_REPOSITORY#*/}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
       - name: checkout repository
+        if: env.RUN_UNIT_TESTS == 'true'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: build docker image
+      - name: build Dockerfile image (web)
+        if: env.RUN_UNIT_TESTS == 'true'
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
+          image-name: ${{env.IMAGE}}-web
           push-image: 'false'
 
       - name: create logs folder (necessary to run unit tests)
+        if: env.RUN_UNIT_TESTS == 'true'
         run: |
           mkdir -p logs
           chmod -R 777 logs      
 
       - name: run unit tests
+        if: env.RUN_UNIT_TESTS == 'true'
         run: |
           docker run --rm -e DJANGO_SECRET_KEY="${{secrets.DJANGO_SECRET_KEY}}" -v "${PWD}/logs:/app/logs" \
-          "${{env.IMAGE}}" sh -c "python manage.py test --no-input -b -v 2" > test_results.txt 2>&1
+          "${{env.IMAGE}}-web" sh -c "python manage.py test --no-input -b -v 2" > test_results.txt 2>&1
 
       - name: show test results in job summary
-        if: always() # runs even if the last step fails
+        if: env.RUN_UNIT_TESTS == 'true' && always() # runs even if the last step fails
         uses: ./.github/actions/show-test-results
         with:
           results-file: test_results.txt
+
+      - name: build Dockerfile-ai image
+        if: env.BUILD_DOCKERFILE_AI == 'true'
+        uses: ./.github/actions/build-push-docker-image
+        with:
+          image-name: ${{env.IMAGE}}-ai
+          file: Dockerfile-ai
+          push-image: 'false'
+          # point to the image created in the last step
+          build-contexts: |            
+            youtube-summarizer-web=docker-image://youtube-summarizer-web
 
   build-nginx:
     needs: check-for-changes
@@ -89,16 +118,18 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      IMAGE: ${{github.repository}}-nginx
-
     steps:
+      - name: Extract image name from repository name
+        run: |
+          IMAGE="${GITHUB_REPOSITORY#*/}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
       - name: checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: build nginx docker image
         uses: ./.github/actions/build-push-docker-image
         with:
-          image-name: ${{env.IMAGE}}
+          image-name: ${{env.IMAGE}}-nginx
           context: './nginx'
           push-image: 'false'
